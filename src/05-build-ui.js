@@ -44,7 +44,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.8.0</span>
+                    <span id="cdp-version">v2.8.1</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
@@ -135,7 +135,8 @@
                     <span id="cdp-status-text">Loading color database...</span>
                 </div>
                 <div id="cdp-footer-right">
-                    <span class="cdp-kbd">Alt</span>+<span class="cdp-kbd">C</span> Toggle
+                    <span class="cdp-footer-shortcut"><span class="cdp-kbd">Alt</span>+<span class="cdp-kbd">C</span> Toggle</span>
+                    <span class="cdp-footer-shortcut"><span class="cdp-kbd">Left</span>/<span class="cdp-kbd">Right</span> Move</span>
                 </div>
             </div>`;
         document.body.appendChild(panel);

@@ -24,6 +24,7 @@
     const STORAGE_KEYS = Object.freeze({
         history: 'cdp_detection_history',
         activeTab: 'cdp_active_tab',
+        sidebarSide: 'cdp_sidebar_side',
         colorCache: 'cdp_color_database_cache',
     });
     const FALLBACK_COLOR_DATABASE = Object.freeze([
@@ -61,6 +62,7 @@
 
     let colorDatabase = [];
     let isPanelOpen = false;
+    let sidebarSide = 'right';
     let isDetecting = false;
     let currentHighlight = null;
     let detectionHistory = [];

@@ -13,8 +13,8 @@ ada di [SKILL.md](SKILL.md).
 - Mode Pixel memakai EyeDropper API bila tersedia untuk membaca warna piksel
   asli, termasuk pada gambar dan gradient.
 - Mode Style tetap tersedia sebagai fallback berbasis computed style.
-- History, tab aktif, dan cache database warna disimpan via penyimpanan
-  userscript supaya bertahan antar reload.
+- History, sisi sidebar, tab aktif, dan cache database warna disimpan via
+  penyimpanan userscript supaya bertahan antar reload.
 - Database warna memakai cache stale-while-revalidate dan 30 warna dasar
   bawaan sebagai fallback saat jaringan tidak tersedia.
 - Tab History dan Palette bisa diekspor sebagai CSS custom properties,
@@ -30,8 +30,10 @@ ada di [SKILL.md](SKILL.md).
   siap tempel.
 - Tab Site Info memindai font terpakai, palet warna, design token `:root`,
   dan sinyal teknologi halaman secara bertahap agar UI tetap responsif.
-- Panel tampil sebagai sidebar responsif di sisi kanan dan bergeser masuk
-  atau keluar saat tombol toggle ditekan.
+- Panel tampil sebagai sidebar responsif dan bergeser masuk atau keluar
+  saat tombol toggle ditekan.
+- Tombol `Left` dan `Right` memindahkan sidebar ke sisi layar yang tidak
+  menutupi konten yang sedang diperiksa.
 - Tampilan memakai gaya sederhana ala GitHub dengan tombol sedikit
   melengkung dan kartu yang rapi.
 

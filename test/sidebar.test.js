@@ -17,13 +17,15 @@ function classList() {
     };
 }
 
-function loadSetPanelOpen() {
+function loadSidebarUtilities() {
     const sourcePath = path.join(__dirname, '..', 'src', '06-event-listeners.js');
     const source = fs.readFileSync(sourcePath, 'utf8');
     const toggleClasses = classList();
     const panelClasses = classList();
     const toggleAttributes = {};
     const panelAttributes = {};
+    const storedValues = {};
+    const notifications = [];
     const toggleButton = {
         classList: toggleClasses,
         title: '',
@@ -44,6 +46,14 @@ function loadSetPanelOpen() {
     const sandbox = {
         module: { exports: {} },
         isPanelOpen: false,
+        sidebarSide: 'right',
+        STORAGE_KEYS: { sidebarSide: 'cdp_sidebar_side' },
+        safeSetValue(key, value) {
+            storedValues[key] = value;
+        },
+        showNotification(message, type) {
+            notifications.push({ message, type });
+        },
         document: {
             activeElement: null,
             getElementById(id) {
@@ -52,24 +62,28 @@ function loadSetPanelOpen() {
         },
     };
 
-    vm.runInNewContext(`${source}\nmodule.exports = { setPanelOpen, getPanelState: () => isPanelOpen };`, sandbox, {
+    vm.runInNewContext(`${source}\nmodule.exports = { setPanelOpen, setPanelSide, getPanelState: () => isPanelOpen, getPanelSide: () => sidebarSide };`, sandbox, {
         filename: sourcePath,
     });
 
     return {
         setPanelOpen: sandbox.module.exports.setPanelOpen,
+        setPanelSide: sandbox.module.exports.setPanelSide,
         getPanelState: sandbox.module.exports.getPanelState,
+        getPanelSide: sandbox.module.exports.getPanelSide,
         panel,
         panelClasses,
         panelAttributes,
         toggleClasses,
         toggleAttributes,
         toggleButton,
+        storedValues,
+        notifications,
     };
 }
 
 test('setPanelOpen synchronizes sidebar, toggle button, and accessibility state', () => {
-    const ui = loadSetPanelOpen();
+    const ui = loadSidebarUtilities();
 
     ui.setPanelOpen(ui.panel, true);
     assert.equal(ui.getPanelState(), true);
@@ -86,4 +100,24 @@ test('setPanelOpen synchronizes sidebar, toggle button, and accessibility state'
     assert.equal(ui.panelAttributes['aria-hidden'], 'true');
     assert.equal(ui.toggleAttributes['aria-expanded'], 'false');
     assert.equal(ui.toggleButton.title, 'Show Color Detector Pro');
+});
+
+test('setPanelSide moves the sidebar and toggle button between screen edges', () => {
+    const ui = loadSidebarUtilities();
+
+    ui.setPanelSide(ui.panel, 'left');
+    assert.equal(ui.getPanelSide(), 'left');
+    assert.equal(ui.panelClasses.classes.has('cdp-sidebar-left'), true);
+    assert.equal(ui.toggleClasses.classes.has('cdp-sidebar-left'), true);
+    assert.equal(ui.panelAttributes['data-side'], 'left');
+    assert.equal(ui.toggleAttributes['data-side'], 'left');
+    assert.equal(ui.storedValues.cdp_sidebar_side, 'left');
+    assert.deepEqual(ui.notifications, [{ message: 'Sidebar: Left', type: 'info' }]);
+
+    ui.setPanelSide(ui.panel, 'right');
+    assert.equal(ui.getPanelSide(), 'right');
+    assert.equal(ui.panelClasses.classes.has('cdp-sidebar-left'), false);
+    assert.equal(ui.toggleClasses.classes.has('cdp-sidebar-left'), false);
+    assert.equal(ui.storedValues.cdp_sidebar_side, 'right');
+    assert.deepEqual(ui.notifications[1], { message: 'Sidebar: Right', type: 'info' });
 });

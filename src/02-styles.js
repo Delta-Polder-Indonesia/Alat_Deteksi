@@ -53,6 +53,16 @@
             pointer-events: none;
             transition: transform 0.22s ease, visibility 0s linear 0.22s;
         }
+        #cdp-panel.cdp-sidebar-left {
+            right: auto;
+            left: 0;
+            border-left: 0;
+            border-right: 1px solid var(--cdp-border);
+            box-shadow: 12px 0 28px rgba(1,4,9,0.42);
+        }
+        #cdp-panel.cdp-sidebar-left.cdp-hidden {
+            transform: translateX(-100%);
+        }
 
         /* ----- HEADER ----- */
         #cdp-header {
@@ -791,6 +801,9 @@
             flex-shrink: 0;
         }
         #cdp-footer-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             font-size: 11px;
             color: var(--cdp-text-secondary);
             white-space: nowrap;
@@ -825,10 +838,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: right 0.22s ease, var(--cdp-transition);
+            transition: left 0.22s ease, right 0.22s ease, var(--cdp-transition);
         }
         #cdp-toggle-btn.cdp-sidebar-open {
             right: calc(var(--cdp-sidebar-width) + 12px);
+        }
+        #cdp-toggle-btn.cdp-sidebar-left {
+            right: auto;
+            left: 24px;
+        }
+        #cdp-toggle-btn.cdp-sidebar-left.cdp-sidebar-open {
+            left: calc(var(--cdp-sidebar-width) + 12px);
         }
         #cdp-toggle-btn:hover,
         #cdp-toggle-btn.cdp-detecting {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/JD-YH03D/release
-// @version      2.8.0
+// @version      2.8.1
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -48,6 +48,7 @@
     const STORAGE_KEYS = Object.freeze({
         history: 'cdp_detection_history',
         activeTab: 'cdp_active_tab',
+        sidebarSide: 'cdp_sidebar_side',
         colorCache: 'cdp_color_database_cache',
     });
     const FALLBACK_COLOR_DATABASE = Object.freeze([
@@ -85,6 +86,7 @@
 
     let colorDatabase = [];
     let isPanelOpen = false;
+    let sidebarSide = 'right';
     let isDetecting = false;
     let currentHighlight = null;
     let detectionHistory = [];
@@ -166,6 +168,16 @@
             visibility: hidden;
             pointer-events: none;
             transition: transform 0.22s ease, visibility 0s linear 0.22s;
+        }
+        #cdp-panel.cdp-sidebar-left {
+            right: auto;
+            left: 0;
+            border-left: 0;
+            border-right: 1px solid var(--cdp-border);
+            box-shadow: 12px 0 28px rgba(1,4,9,0.42);
+        }
+        #cdp-panel.cdp-sidebar-left.cdp-hidden {
+            transform: translateX(-100%);
         }
 
         /* ----- HEADER ----- */
@@ -905,6 +917,9 @@
             flex-shrink: 0;
         }
         #cdp-footer-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             font-size: 11px;
             color: var(--cdp-text-secondary);
             white-space: nowrap;
@@ -939,10 +954,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: right 0.22s ease, var(--cdp-transition);
+            transition: left 0.22s ease, right 0.22s ease, var(--cdp-transition);
         }
         #cdp-toggle-btn.cdp-sidebar-open {
             right: calc(var(--cdp-sidebar-width) + 12px);
+        }
+        #cdp-toggle-btn.cdp-sidebar-left {
+            right: auto;
+            left: 24px;
+        }
+        #cdp-toggle-btn.cdp-sidebar-left.cdp-sidebar-open {
+            left: calc(var(--cdp-sidebar-width) + 12px);
         }
         #cdp-toggle-btn:hover,
         #cdp-toggle-btn.cdp-detecting {
@@ -2510,7 +2532,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.8.0</span>
+                    <span id="cdp-version">v2.8.1</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
@@ -2601,7 +2623,8 @@
                     <span id="cdp-status-text">Loading color database...</span>
                 </div>
                 <div id="cdp-footer-right">
-                    <span class="cdp-kbd">Alt</span>+<span class="cdp-kbd">C</span> Toggle
+                    <span class="cdp-footer-shortcut"><span class="cdp-kbd">Alt</span>+<span class="cdp-kbd">C</span> Toggle</span>
+                    <span class="cdp-footer-shortcut"><span class="cdp-kbd">Left</span>/<span class="cdp-kbd">Right</span> Move</span>
                 </div>
             </div>`;
         document.body.appendChild(panel);
@@ -2758,6 +2781,26 @@
         if (shouldRender) renderCurrentTab();
     }
 
+    function setPanelSide(panel, side, shouldNotify = true) {
+        const toggleBtn = document.getElementById('cdp-toggle-btn');
+        const nextSide = side === 'left' ? 'left' : 'right';
+        const sideChanged = sidebarSide !== nextSide;
+        sidebarSide = nextSide;
+        panel.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
+        panel.setAttribute('data-side', sidebarSide);
+        toggleBtn.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
+        toggleBtn.setAttribute('data-side', sidebarSide);
+        safeSetValue(STORAGE_KEYS.sidebarSide, sidebarSide);
+        if (shouldNotify && sideChanged) {
+            showNotification('Sidebar: ' + (sidebarSide === 'left' ? 'Left' : 'Right'), 'info');
+        }
+    }
+
+    function isEditableKeyboardTarget(target) {
+        return !!(target && typeof target.closest === 'function' &&
+            target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]'));
+    }
+
     function setPanelOpen(panel, open) {
         const toggleBtn = document.getElementById('cdp-toggle-btn');
         isPanelOpen = Boolean(open);
@@ -2772,9 +2815,10 @@
         }
     }
 
-    function restoreUiState() {
+    function restoreUiState(panel) {
         detectionHistory = loadStoredHistory();
         updateHistoryBadge();
+        setPanelSide(panel, safeGetValue(STORAGE_KEYS.sidebarSide, 'right'), false);
         const storedTab = loadStoredActiveTab();
         selectTab(storedTab, false, storedTab !== 'database');
         setDetectionMode(browserSupportsEyeDropper()
@@ -2797,7 +2841,7 @@
         const tabs = document.querySelectorAll('.cdp-tab');
         const detDisp = document.getElementById('cdp-detector-display');
 
-        restoreUiState();
+        restoreUiState(panel);
 
         // Toggle
         toggleBtn.addEventListener('click', () => {
@@ -2890,6 +2934,16 @@
             if (e.altKey && e.key.toLowerCase() === 'c') {
                 e.preventDefault();
                 setPanelOpen(panel, !isPanelOpen);
+            }
+            if (isPanelOpen && !isEditableKeyboardTarget(e.target) && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setPanelSide(panel, 'left');
+                return;
+            }
+            if (isPanelOpen && !isEditableKeyboardTarget(e.target) && e.key === 'ArrowRight') {
+                e.preventDefault();
+                setPanelSide(panel, 'right');
+                return;
             }
             if (e.key === 'Escape' && isDetecting) {
                 setDetecting(false);

@@ -122,6 +122,26 @@
         if (shouldRender) renderCurrentTab();
     }
 
+    function setPanelSide(panel, side, shouldNotify = true) {
+        const toggleBtn = document.getElementById('cdp-toggle-btn');
+        const nextSide = side === 'left' ? 'left' : 'right';
+        const sideChanged = sidebarSide !== nextSide;
+        sidebarSide = nextSide;
+        panel.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
+        panel.setAttribute('data-side', sidebarSide);
+        toggleBtn.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
+        toggleBtn.setAttribute('data-side', sidebarSide);
+        safeSetValue(STORAGE_KEYS.sidebarSide, sidebarSide);
+        if (shouldNotify && sideChanged) {
+            showNotification('Sidebar: ' + (sidebarSide === 'left' ? 'Left' : 'Right'), 'info');
+        }
+    }
+
+    function isEditableKeyboardTarget(target) {
+        return !!(target && typeof target.closest === 'function' &&
+            target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]'));
+    }
+
     function setPanelOpen(panel, open) {
         const toggleBtn = document.getElementById('cdp-toggle-btn');
         isPanelOpen = Boolean(open);
@@ -136,9 +156,10 @@
         }
     }
 
-    function restoreUiState() {
+    function restoreUiState(panel) {
         detectionHistory = loadStoredHistory();
         updateHistoryBadge();
+        setPanelSide(panel, safeGetValue(STORAGE_KEYS.sidebarSide, 'right'), false);
         const storedTab = loadStoredActiveTab();
         selectTab(storedTab, false, storedTab !== 'database');
         setDetectionMode(browserSupportsEyeDropper()
@@ -161,7 +182,7 @@
         const tabs = document.querySelectorAll('.cdp-tab');
         const detDisp = document.getElementById('cdp-detector-display');
 
-        restoreUiState();
+        restoreUiState(panel);
 
         // Toggle
         toggleBtn.addEventListener('click', () => {
@@ -254,6 +275,16 @@
             if (e.altKey && e.key.toLowerCase() === 'c') {
                 e.preventDefault();
                 setPanelOpen(panel, !isPanelOpen);
+            }
+            if (isPanelOpen && !isEditableKeyboardTarget(e.target) && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setPanelSide(panel, 'left');
+                return;
+            }
+            if (isPanelOpen && !isEditableKeyboardTarget(e.target) && e.key === 'ArrowRight') {
+                e.preventDefault();
+                setPanelSide(panel, 'right');
+                return;
             }
             if (e.key === 'Escape' && isDetecting) {
                 setDetecting(false);
