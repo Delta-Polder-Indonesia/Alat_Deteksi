@@ -30,6 +30,8 @@ ada di [SKILL.md](SKILL.md).
   siap tempel.
 - Tab Site Info memindai font terpakai, palet warna, design token `:root`,
   dan sinyal teknologi halaman secara bertahap agar UI tetap responsif.
+- Tampilan panel memakai gaya sederhana ala GitHub: tombol kotak sedikit
+  melengkung, kartu rapi, dan tanpa efek gerak dekoratif.
 
 ## Alur Kerja
 
