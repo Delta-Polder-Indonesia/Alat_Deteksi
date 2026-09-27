@@ -8,6 +8,31 @@ di `dist/`.
 Aturan kerja dan standar kualitas untuk kontributor maupun agent otomatis
 ada di [SKILL.md](SKILL.md).
 
+## Fitur Utama
+
+- Mode Pixel memakai EyeDropper API bila tersedia untuk membaca warna piksel
+  asli, termasuk pada gambar dan gradient.
+- Mode Style tetap tersedia sebagai fallback berbasis computed style.
+- History, posisi panel, tab aktif, dan cache database warna disimpan via
+  penyimpanan userscript supaya bertahan antar reload.
+- Database warna memakai cache stale-while-revalidate dan 30 warna dasar
+  bawaan sebagai fallback saat jaringan tidak tersedia.
+- Tab History dan Palette bisa diekspor sebagai CSS custom properties,
+  JSON, atau daftar hex polos.
+- Preview warna menampilkan rasio kontras WCAG terhadap putih dan hitam.
+- Tab Harmony membuat skema complementary, analogous, triadic, dan
+  monochromatic dari warna terakhir yang terdeteksi.
+- Mode Asset Picker membantu mengambil SVG, gambar, background image,
+  sprite, data URI, dan poster video dari halaman sebagai referensi desain.
+- Tab Assets memindai halaman, menampilkan galeri aset, dan mengunduh aset
+  terpilih atau semua aset secara berurutan.
+- Mode Inspect menampilkan properti CSS utama elemen dan menyalin deklarasi
+  siap tempel.
+- Tab Site Info memindai font terpakai, palet warna, design token `:root`,
+  dan sinyal teknologi halaman secara bertahap agar UI tetap responsif.
+- Tampilan panel memakai gaya sederhana ala GitHub: tombol kotak sedikit
+  melengkung, kartu rapi, dan tanpa efek gerak dekoratif.
+
 ## Alur Kerja
 
 ```bash

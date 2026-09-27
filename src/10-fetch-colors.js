@@ -2,50 +2,131 @@
 
     const FETCH_TIMEOUT_MS = 15000;
 
-    // Satu jalur untuk semua keadaan gagal fetch, supaya markup dan status
-    // tidak diduplikasi di tiap handler. Detail error selalu dilaporkan ke
-    // console lewat logError agar langsung terdeteksi saat debugging.
-    function showFetchError(statusText, message, detail) {
-        logError('fetchColors — ' + statusText, detail);
+    function normalizeColorDatabase(data) {
+        if (!Array.isArray(data)) {
+            throw new Error('Unexpected response shape: expected an array');
+        }
+        const colors = [];
+        data.forEach(item => {
+            if (!item || typeof item !== 'object') return;
+            const code = normalizeHex(item.Code);
+            const name = String(item['Color names'] || '').trim();
+            if (!code || !name) return;
+            colors.push({ 'Color names': name, Code: code });
+        });
+        if (colors.length === 0) {
+            throw new Error('Database did not contain valid colors');
+        }
+        return colors;
+    }
+
+    function cloneFallbackColorDatabase() {
+        return FALLBACK_COLOR_DATABASE.map(color => ({
+            'Color names': color['Color names'],
+            Code: color.Code,
+        }));
+    }
+
+    function loadColorCache() {
+        const cached = readJsonValue(STORAGE_KEYS.colorCache, null);
+        if (!cached) return null;
+        try {
+            const savedAt = Number(cached.savedAt);
+            if (!Number.isFinite(savedAt)) {
+                throw new Error('Cached database timestamp is invalid');
+            }
+            return {
+                data: normalizeColorDatabase(cached.data),
+                savedAt,
+            };
+        } catch (err) {
+            logError('loadColorCache', err);
+            return null;
+        }
+    }
+
+    function saveColorCache(data) {
+        writeJsonValue(STORAGE_KEYS.colorCache, {
+            data,
+            savedAt: Date.now(),
+        });
+    }
+
+    function setDatabaseStatus(statusText) {
         document.getElementById('cdp-status-text').textContent = statusText;
-        document.getElementById('cdp-color-list-container').innerHTML = `
-            <div class="cdp-empty-state">
-                <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
-                <div class="cdp-empty-state-text">${message}</div>
-            </div>`;
+    }
+
+    function applyColorDatabase(data, statusText) {
+        colorDatabase = data;
+        document.getElementById('cdp-db-count').textContent = colorDatabase.length;
+        setDatabaseStatus(statusText);
+        renderCurrentTab();
+    }
+
+    function applyFallbackColorDatabase(statusText) {
+        applyColorDatabase(cloneFallbackColorDatabase(), statusText);
+    }
+
+    function handleColorRequestFailure(statusText, detail, isBackgroundRefresh) {
+        logError('fetchColors - ' + statusText, detail);
+        const cached = loadColorCache();
+        if (cached) {
+            if (isBackgroundRefresh && colorDatabase.length > 0) {
+                setDatabaseStatus('Using cached colors; refresh failed');
+            } else {
+                applyColorDatabase(cached.data, 'Using cached colors; refresh failed');
+            }
+            return;
+        }
+        applyFallbackColorDatabase('Using bundled fallback colors');
+    }
+
+    function refreshColorDatabase(isBackgroundRefresh) {
+        try {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: API_URL,
+                timeout: FETCH_TIMEOUT_MS,
+                onload(response) {
+                    try {
+                        if (response.status < 200 || response.status >= 300) {
+                            throw new Error('HTTP status ' + response.status);
+                        }
+                        const data = normalizeColorDatabase(JSON.parse(response.responseText));
+                        saveColorCache(data);
+                        applyColorDatabase(data, isBackgroundRefresh
+                            ? data.length + ' colors refreshed in background'
+                            : data.length + ' colors loaded successfully');
+                    } catch (err) {
+                        handleColorRequestFailure('Failed to load database', err, isBackgroundRefresh);
+                    }
+                },
+                onerror(response) {
+                    handleColorRequestFailure('Connection error',
+                        { url: API_URL, status: response && response.status },
+                        isBackgroundRefresh);
+                },
+                ontimeout() {
+                    handleColorRequestFailure('Connection timed out',
+                        { url: API_URL, timeoutMs: FETCH_TIMEOUT_MS },
+                        isBackgroundRefresh);
+                }
+            });
+        } catch (err) {
+            handleColorRequestFailure('Request failed to start', err, isBackgroundRefresh);
+        }
     }
 
     function fetchColors() {
-        GM_xmlhttpRequest({
-            method: 'GET',
-            url: API_URL,
-            timeout: FETCH_TIMEOUT_MS,
-            onload(response) {
-                try {
-                    const data = JSON.parse(response.responseText);
-                    if (!Array.isArray(data)) {
-                        throw new Error('Unexpected response shape: expected an array');
-                    }
-                    colorDatabase = data;
-                    document.getElementById('cdp-db-count').textContent = colorDatabase.length;
-                    document.getElementById('cdp-status-text').textContent =
-                        colorDatabase.length + ' colors loaded successfully';
-                    renderColorList();
-                } catch (e) {
-                    showFetchError('Failed to parse database',
-                        'Failed to load color database.<br>The server response was not valid.', e);
-                }
-            },
-            onerror(response) {
-                showFetchError('Connection error',
-                    'Could not connect to server.<br>Please check your internet connection.',
-                    { url: API_URL, status: response && response.status });
-            },
-            ontimeout() {
-                showFetchError('Connection timed out',
-                    'The server took too long to respond.<br>Please try again later.',
-                    { url: API_URL, timeoutMs: FETCH_TIMEOUT_MS });
-            }
-        });
+        const cached = loadColorCache();
+        if (cached) {
+            const isStale = Date.now() - cached.savedAt > COLOR_CACHE_TTL_MS;
+            applyColorDatabase(cached.data, isStale
+                ? cached.data.length + ' cached colors loaded; refreshing'
+                : cached.data.length + ' cached colors loaded');
+            if (isStale) refreshColorDatabase(true);
+            return;
+        }
+        refreshColorDatabase(false);
     }
 

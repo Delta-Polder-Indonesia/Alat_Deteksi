@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build userscript
+        run: node build.js
+
+      - name: Check built userscript syntax
+        run: node --check dist/ColorDetektor.user.js
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Audit source
+        run: npm run audit
+
+      - name: Verify dist matches src build
+        run: git diff --exit-code -- dist/

@@ -44,7 +44,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.1</span>
+                    <span id="cdp-version">v2.7</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
@@ -57,6 +57,9 @@
                     <span>◎</span>
                     <span id="cdp-detect-label">Start Color Detection</span>
                 </button>
+                <button id="cdp-mode-btn" type="button" title="Toggle detection mode">Mode</button>
+                <button id="cdp-asset-btn" type="button" class="cdp-inactive" title="Pick page assets">Asset Picker</button>
+                <button id="cdp-inspect-btn" type="button" class="cdp-inactive" title="Inspect element styles">Inspect</button>
                 <button id="cdp-clear-btn" title="Clear History">Clear</button>
             </div>
 
@@ -70,6 +73,16 @@
                         <div id="cdp-color-hex" style="color:#667eea;">— — —</div>
                         <div id="cdp-color-rgb">RGB: —</div>
                         <div id="cdp-color-hsl">HSL: —</div>
+                        <div id="cdp-contrast-panel">
+                            <div class="cdp-contrast-row">
+                                <span>Contrast vs #FFFFFF</span>
+                                <strong id="cdp-contrast-white">-</strong>
+                            </div>
+                            <div class="cdp-contrast-row">
+                                <span>Contrast vs #000000</span>
+                                <strong id="cdp-contrast-black">-</strong>
+                            </div>
+                        </div>
                         <div class="cdp-copy-hint">Click to copy color code</div>
                     </div>
                 </div>
@@ -86,6 +99,15 @@
                 </button>
                 <button class="cdp-tab" data-tab="palette">
                     Palette
+                </button>
+                <button class="cdp-tab" data-tab="harmony">
+                    Harmony
+                </button>
+                <button class="cdp-tab" data-tab="assets">
+                    Assets
+                </button>
+                <button class="cdp-tab" data-tab="site-info">
+                    Site Info
                 </button>
             </div>
 
@@ -110,6 +132,31 @@
                 </div>
             </div>`;
         document.body.appendChild(panel);
+
+        const assetActions = document.createElement('div');
+        assetActions.id = 'cdp-asset-action-popover';
+        assetActions.className = 'cdp-hidden';
+        assetActions.innerHTML = `
+            <div id="cdp-asset-action-title">Asset actions</div>
+            <div id="cdp-asset-action-meta"></div>
+            <button id="cdp-asset-copy-svg-btn" type="button">Copy SVG code</button>
+            <button id="cdp-asset-download-btn" type="button">Download</button>`;
+        document.body.appendChild(assetActions);
+
+        const inspectCard = document.createElement('div');
+        inspectCard.id = 'cdp-inspect-card';
+        inspectCard.className = 'cdp-hidden';
+        inspectCard.innerHTML = `
+            <div id="cdp-inspect-card-head">
+                <div>
+                    <div id="cdp-inspect-card-title">Inspect</div>
+                    <div id="cdp-inspect-card-subtitle">Hover an element</div>
+                </div>
+                <span id="cdp-inspect-card-state">Live</span>
+            </div>
+            <div id="cdp-inspect-card-body"></div>
+            <button id="cdp-inspect-copy-btn" type="button">Copy CSS</button>`;
+        document.body.appendChild(inspectCard);
 
         setupEventListeners();
     }
