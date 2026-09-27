@@ -1,6 +1,4 @@
-    /* ═══════════════════════════════════════════
-       STYLES
-    ═══════════════════════════════════════════ */
+    /* ===== STYLES ===== */
     GM_addStyle(`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -24,7 +22,7 @@
             --cdp-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* ── PANEL ── */
+        /* ----- PANEL ----- */
         #cdp-panel {
             position: fixed;
             top: 20px;
@@ -79,7 +77,7 @@
             100% { background-position: 200% 0; }
         }
 
-        /* ── HEADER ── */
+        /* ----- HEADER ----- */
         #cdp-header {
             padding: 14px 18px;
             background: linear-gradient(135deg, var(--cdp-primary), var(--cdp-secondary));
@@ -147,7 +145,7 @@
             transform: scale(1.1);
         }
 
-        /* ── TOOLBAR ── */
+        /* ----- TOOLBAR ----- */
         #cdp-toolbar {
             padding: 12px 18px;
             background: var(--cdp-bg-card);
@@ -192,7 +190,7 @@
             color: var(--cdp-danger);
         }
 
-        /* ── DETECTOR DISPLAY ── */
+        /* ----- DETECTOR DISPLAY ----- */
         #cdp-detector-display {
             padding: 18px;
             background: var(--cdp-bg-card-alt);
@@ -242,7 +240,7 @@
             margin-top: 2px; opacity: 0.7;
         }
 
-        /* ── TABS ── */
+        /* ----- TABS ----- */
         #cdp-tabs {
             display: flex;
             background: var(--cdp-bg-card);
@@ -277,7 +275,7 @@
             padding: 1px 6px; border-radius: 10px; font-weight: 700;
         }
 
-        /* ── SEARCH ── */
+        /* ----- SEARCH ----- */
         #cdp-search-box {
             padding: 12px 18px;
             background: var(--cdp-bg-card);
@@ -304,10 +302,25 @@
         #cdp-search-icon {
             position: absolute; left: 12px; top: 50%;
             transform: translateY(-50%);
+            display: flex; align-items: center;
             color: var(--cdp-text-muted); font-size: 14px; pointer-events: none;
         }
 
-        /* ── COLOR LIST ── */
+        /* ----- PALETTE ----- */
+        .cdp-palette-grid {
+            display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 18px;
+        }
+        .cdp-palette-swatch {
+            width: 54px; height: 54px; border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 9px; font-family: monospace; font-weight: 700;
+            cursor: pointer; transition: transform 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .cdp-palette-swatch:hover { transform: scale(1.15); }
+
+        /* ----- COLOR LIST ----- */
         #cdp-color-list-container {
             flex: 1; overflow-y: auto; min-height: 0;
             scrollbar-width: thin;
@@ -365,13 +378,13 @@
             color: #fff;
         }
 
-        /* ── HISTORY ── */
+        /* ----- HISTORY ----- */
         .cdp-history-time {
             font-size: 10px; color: var(--cdp-text-muted);
             flex-shrink: 0; font-family: monospace;
         }
 
-        /* ── FOOTER ── */
+        /* ----- FOOTER ----- */
         #cdp-footer {
             padding: 10px 18px;
             background: var(--cdp-bg-card);
@@ -392,7 +405,7 @@
             font-size: 10px; color: var(--cdp-text-muted);
         }
 
-        /* ── TOGGLE BUTTON ── */
+        /* ----- TOGGLE BUTTON ----- */
         #cdp-toggle-btn {
             position: fixed; bottom: 24px; right: 24px;
             width: 56px; height: 56px; border-radius: 16px;
@@ -413,7 +426,7 @@
             background: linear-gradient(135deg, var(--cdp-success), #38a169);
         }
 
-        /* ── TOOLTIP ── */
+        /* ----- TOOLTIP ----- */
         #cdp-cursor-tooltip {
             position: fixed;
             padding: 8px 14px;
@@ -439,14 +452,14 @@
         #cdp-tooltip-name { font-size: 12px; font-weight: 600; color: #fff; }
         #cdp-tooltip-hex { font-size: 11px; color: var(--cdp-text-muted); font-family: monospace; }
 
-        /* ── HIGHLIGHT ── */
+        /* ----- HIGHLIGHT ----- */
         .cdp-element-highlight {
             outline: 2px dashed var(--cdp-primary) !important;
             outline-offset: 2px !important;
             transition: outline 0.1s ease !important;
         }
 
-        /* ── TOAST ── */
+        /* ----- TOAST ----- */
         #cdp-toast {
             position: fixed; bottom: 90px; right: 24px;
             padding: 10px 20px;
@@ -463,7 +476,7 @@
         }
         #cdp-toast.cdp-toast-show { opacity: 1; transform: translateY(0); }
 
-        /* ── LOADING ── */
+        /* ----- LOADING ----- */
         .cdp-loading-spinner {
             width: 40px; height: 40px;
             border: 3px solid var(--cdp-border);

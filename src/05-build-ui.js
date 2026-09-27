@@ -1,12 +1,21 @@
-    /* ═══════════════════════════════════════════
-       BUILD UI
-    ═══════════════════════════════════════════ */
+    /* ===== BUILD UI ===== */
+
+    const ICON_PIPETTE =
+        '<svg width="{S}" height="{S}" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+        ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/>' +
+        '<path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/>' +
+        '</svg>';
+
+    function pipetteIcon(size) {
+        return ICON_PIPETTE.replace(/\{S\}/g, size);
+    }
 
     function buildUI() {
         // Toggle Button
         const toggleBtn = document.createElement('button');
         toggleBtn.id = 'cdp-toggle-btn';
-        toggleBtn.innerHTML = '🎨';
+        toggleBtn.innerHTML = pipetteIcon(24);
         toggleBtn.title = 'Color Detector Pro (Alt+C)';
         document.body.appendChild(toggleBtn);
 
@@ -33,13 +42,13 @@
         panel.innerHTML = `
             <div id="cdp-header">
                 <div id="cdp-header-left">
-                    <div id="cdp-logo">🎨</div>
+                    <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
                     <span id="cdp-version">v2.1</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
-                    <button class="cdp-header-btn" id="cdp-btn-close" title="Close Panel">✕</button>
+                    <button class="cdp-header-btn" id="cdp-btn-close" title="Close Panel">&times;</button>
                 </div>
             </div>
 
@@ -48,7 +57,7 @@
                     <span>◎</span>
                     <span id="cdp-detect-label">Start Color Detection</span>
                 </button>
-                <button id="cdp-clear-btn" title="Clear History">🗑</button>
+                <button id="cdp-clear-btn" title="Clear History">Clear</button>
             </div>
 
             <div id="cdp-detector-display">
@@ -68,21 +77,21 @@
 
             <div id="cdp-tabs">
                 <button class="cdp-tab cdp-tab-active" data-tab="database">
-                    📋 Database
+                    Database
                     <span class="cdp-tab-badge" id="cdp-db-count">0</span>
                 </button>
                 <button class="cdp-tab" data-tab="history">
-                    🕐 History
+                    History
                     <span class="cdp-tab-badge" id="cdp-history-count">0</span>
                 </button>
                 <button class="cdp-tab" data-tab="palette">
-                    🎭 Palette
+                    Palette
                 </button>
             </div>
 
             <div id="cdp-search-box">
                 <div id="cdp-search-wrapper">
-                    <span id="cdp-search-icon">🔍</span>
+                    <span id="cdp-search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
                     <input type="text" id="cdp-search-input" placeholder="Search colors... (name or hex code)">
                 </div>
             </div>

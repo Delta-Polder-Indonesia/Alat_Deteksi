@@ -1,6 +1,34 @@
-    /* ═══════════════════════════════════════════
-       UTILITIES
-    ═══════════════════════════════════════════ */
+    /* ===== UTILITIES ===== */
+
+    // Jalur tunggal pelaporan error runtime. Semua kegagalan wajib lewat
+    // sini supaya langsung terlihat di console browser dengan prefiks dan
+    // konteks yang jelas — tidak ada error yang ditelan diam-diam.
+    function logError(context, err) {
+        console.error(`${LOG_PREFIX} ${context}:`, err);
+    }
+
+    // Bungkus event handler agar exception di dalamnya tercatat di console
+    // (dengan konteks) dan tidak merembet mengganggu halaman host.
+    function guard(context, fn) {
+        return function (...args) {
+            try {
+                return fn.apply(this, args);
+            } catch (err) {
+                logError(context, err);
+            }
+        };
+    }
+
+    // Escape teks sebelum dimasukkan ke innerHTML/atribut HTML.
+    // Wajib dipakai untuk semua data eksternal (input user, respons API).
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 
     function hexToRgb(hex) {
         const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -51,7 +79,7 @@
     function rgbStringToHex(rgb) {
         const m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
         if (!m) return null;
-        return '#' + [m[1],m[2],m[3]].map(x => parseInt(x).toString(16).padStart(2,'0')).join('').toUpperCase();
+        return '#' + [m[1],m[2],m[3]].map(x => parseInt(x, 10).toString(16).padStart(2,'0')).join('').toUpperCase();
     }
 
     function getContrastColor(hex) {
@@ -60,22 +88,35 @@
         return (0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b) / 255 > 0.5 ? '#1a1a2e' : '#FFFFFF';
     }
 
+    // Timer disimpan agar toast beruntun tidak saling menutup lebih cepat
+    // (timeout milik toast lama tidak boleh menyembunyikan toast baru).
+    let toastTimer = null;
+
     function showToast(msg) {
         const t = document.getElementById('cdp-toast');
         t.textContent = msg;
         t.classList.add('cdp-toast-show');
-        setTimeout(() => t.classList.remove('cdp-toast-show'), 2000);
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('cdp-toast-show'), 2000);
     }
 
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
             showToast('Copied: ' + text);
-        }).catch(() => {
-            const ta = document.createElement('textarea');
-            ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
-            document.body.appendChild(ta); ta.select();
-            document.execCommand('copy'); document.body.removeChild(ta);
-            showToast('Copied: ' + text);
+        }).catch((clipboardErr) => {
+            // Clipboard API bisa ditolak (permission/kontex tidak aman) —
+            // coba fallback lama, dan laporkan bila keduanya gagal.
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); document.body.removeChild(ta);
+                showToast('Copied: ' + text);
+            } catch (fallbackErr) {
+                logError('copyToClipboard (clipboard API dan fallback gagal)',
+                    { clipboardErr, fallbackErr });
+                showToast('Copy failed');
+            }
         });
     }
 

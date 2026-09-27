@@ -1,10 +1,14 @@
-# 🎨 Alat Deteksi Warna — Color Detector Pro
+# Alat Deteksi Warna — Color Detector Pro
 
-Userscript Tampermonkey/Greasemonkey untuk deteksi warna real-time di halaman web mana pun.
-Kode sumber sudah **dipecah per bagian** di `src/` supaya gampang dimodifikasi/diperbaiki,
-lalu digabung otomatis menjadi satu file utuh di `dist/`.
+Userscript Tampermonkey/Greasemonkey untuk deteksi warna real-time di halaman
+web mana pun. Kode sumber dipecah per bagian di `src/` supaya mudah
+dimodifikasi dan diperbaiki, lalu digabung otomatis menjadi satu file utuh
+di `dist/`.
 
-## 🚀 Alur Kerja
+Aturan kerja dan standar kualitas untuk kontributor maupun agent otomatis
+ada di [SKILL.md](SKILL.md).
+
+## Alur Kerja
 
 ```bash
 # 1. Edit bagian yang mau diubah di folder src/
@@ -12,7 +16,7 @@ lalu digabung otomatis menjadi satu file utuh di `dist/`.
 node build.js          # atau: npm run build
 
 # 3. Ambil hasilnya:
-dist/ColorDetektor.user.js   ← file siap install / publish
+#    dist/ColorDetektor.user.js  (file siap install / publish)
 ```
 
 Mode otomatis (rebuild tiap kali file di `src/` disimpan):
@@ -21,9 +25,9 @@ Mode otomatis (rebuild tiap kali file di `src/` disimpan):
 node build.js --watch  # atau: npm run watch
 ```
 
-> Tidak butuh dependency apa pun — cukup Node.js bawaan.
+Tidak butuh dependency apa pun — cukup Node.js bawaan.
 
-## 📁 Struktur `src/`
+## Struktur `src/`
 
 | File | Isi | Kapan diedit |
 |---|---|---|
@@ -41,14 +45,12 @@ node build.js --watch  # atau: npm run watch
 | `11-init.js` | Inisialisasi (`buildUI()` + `fetchColors()`) | Ubah urutan start |
 | `00-header.js` / `99-footer.js` | Pembuka & penutup IIFE | Jarang disentuh |
 
-## ⚠️ Catatan Penting
+## Catatan Penting
 
 - Semua file di `src/` **berbagi satu scope IIFE yang sama** — variabel/fungsi
   di satu file bisa langsung dipakai file lain. Urutan penggabungan diatur di
   array `ORDER` dalam `build.js`; jangan diubah sembarangan.
 - Setiap build otomatis divalidasi (`node --check`), jadi syntax error
   langsung ketahuan.
-- `ColorDetektor.js` di root adalah **file monolit lama** yang disimpan sebagai
-  cadangan/referensi. Boleh dihapus kalau sudah yakin alur build ini dipakai terus.
 - Saat publish update, jangan lupa naikkan `@version` di `src/meta.js`
   supaya Tampermonkey mendeteksi versi baru.

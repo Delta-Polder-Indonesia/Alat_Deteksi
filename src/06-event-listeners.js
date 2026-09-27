@@ -1,6 +1,4 @@
-    /* ═══════════════════════════════════════════
-       EVENT LISTENERS
-    ═══════════════════════════════════════════ */
+    /* ===== EVENT LISTENERS ===== */
 
     function setupEventListeners() {
         const panel = document.getElementById('cdp-panel');
@@ -33,21 +31,25 @@
             minBtn.innerHTML = isPanelMinimized ? '▢' : '─';
         });
 
-        // Detect
-        detectBtn.addEventListener('click', () => {
-            isDetecting = !isDetecting;
-            detectBtn.className = isDetecting ? 'cdp-active' : 'cdp-inactive';
+        // Satu-satunya jalur untuk mengubah mode deteksi,
+        // dipakai tombol Detect maupun tombol Escape.
+        function setDetecting(active) {
+            isDetecting = active;
+            detectBtn.className = active ? 'cdp-active' : 'cdp-inactive';
             document.getElementById('cdp-detect-label').textContent =
-                isDetecting ? '● Detecting... (click to stop)' : 'Start Color Detection';
-            toggleBtn.classList.toggle('cdp-detecting', isDetecting);
-            if (!isDetecting) {
+                active ? '● Detecting... (click to stop)' : 'Start Color Detection';
+            toggleBtn.classList.toggle('cdp-detecting', active);
+            if (!active) {
                 document.getElementById('cdp-cursor-tooltip').classList.remove('cdp-tooltip-visible');
                 if (currentHighlight) {
                     currentHighlight.classList.remove('cdp-element-highlight');
                     currentHighlight = null;
                 }
             }
-        });
+        }
+
+        // Detect
+        detectBtn.addEventListener('click', () => setDetecting(!isDetecting));
 
         // Clear
         clearBtn.addEventListener('click', () => {
@@ -78,12 +80,14 @@
             });
         });
 
-        // Detection
-        document.addEventListener('mousemove', handleMouseMove, true);
-        document.addEventListener('click', handleDetectionClick, true);
+        // Detection — listener global di halaman host dibungkus guard():
+        // exception apa pun tercatat di console dengan konteks, tidak
+        // menjalar merusak event handling halaman.
+        document.addEventListener('mousemove', guard('handleMouseMove', handleMouseMove), true);
+        document.addEventListener('click', guard('handleDetectionClick', handleDetectionClick), true);
 
         // Keyboard
-        document.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', guard('keydown shortcut', (e) => {
             if (e.altKey && e.key.toLowerCase() === 'c') {
                 e.preventDefault();
                 isPanelOpen = !isPanelOpen;
@@ -91,17 +95,9 @@
                 if (isPanelOpen) requestAnimationFrame(() => clampPanel(panel));
             }
             if (e.key === 'Escape' && isDetecting) {
-                isDetecting = false;
-                detectBtn.className = 'cdp-inactive';
-                document.getElementById('cdp-detect-label').textContent = 'Start Color Detection';
-                toggleBtn.classList.remove('cdp-detecting');
-                document.getElementById('cdp-cursor-tooltip').classList.remove('cdp-tooltip-visible');
-                if (currentHighlight) {
-                    currentHighlight.classList.remove('cdp-element-highlight');
-                    currentHighlight = null;
-                }
+                setDetecting(false);
             }
-        });
+        }));
 
         // Viewport resize — re-clamp
         window.addEventListener('resize', () => {

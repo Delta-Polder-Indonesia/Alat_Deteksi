@@ -1,6 +1,4 @@
-    /* ═══════════════════════════════════════════
-       DRAG — grab/grabbing cursor + boundary clamp
-    ═══════════════════════════════════════════ */
+    /* ===== DRAG — grab/grabbing cursor + boundary clamp ===== */
 
     function makeDraggable(element, handle) {
         let isDragging = false;
@@ -19,7 +17,7 @@
             e.preventDefault();
         });
 
-        document.addEventListener('mousemove', (e) => {
+        document.addEventListener('mousemove', guard('makeDraggable mousemove', (e) => {
             if (!isDragging) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
@@ -43,7 +41,7 @@
             element.style.left = newLeft + 'px';
             element.style.top = newTop + 'px';
             element.style.right = 'auto';
-        });
+        }));
 
         document.addEventListener('mouseup', () => {
             if (isDragging) {

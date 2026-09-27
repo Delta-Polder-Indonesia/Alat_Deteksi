@@ -1,6 +1,4 @@
-    /* ═══════════════════════════════════════════
-       MOUSE DETECTION
-    ═══════════════════════════════════════════ */
+    /* ===== MOUSE DETECTION ===== */
 
     function handleMouseMove(e) {
         if (!isDetecting) return;
@@ -17,17 +15,9 @@
         const hex = getElementColor(target);
         if (!hex) return;
 
-        const rgb = hexToRgb(hex);
-        const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
         const closest = findClosestColor(hex);
         const colorName = closest ? closest['Color names'] : 'Unknown';
-
-        document.getElementById('cdp-big-swatch-inner').style.background = hex;
-        document.getElementById('cdp-color-name').textContent = colorName;
-        const hexEl = document.getElementById('cdp-color-hex');
-        hexEl.textContent = hex; hexEl.style.color = hex; hexEl.setAttribute('data-hex', hex);
-        document.getElementById('cdp-color-rgb').textContent = `RGB: ${rgb.r}, ${rgb.g}, ${rgb.b}`;
-        document.getElementById('cdp-color-hsl').textContent = `HSL: ${hsl.h}, ${hsl.s}%, ${hsl.l}%`;
+        updatePreview(hex, colorName);
 
         // Tooltip
         const tip = document.getElementById('cdp-cursor-tooltip');
