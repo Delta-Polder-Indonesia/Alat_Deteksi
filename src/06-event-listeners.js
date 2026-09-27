@@ -19,8 +19,8 @@
     function updateDetectionControls() {
         const detectBtn = document.getElementById('cdp-detect-btn');
         const detectLabel = document.getElementById('cdp-detect-label');
-        const toggleBtn = document.getElementById('cdp-toggle-btn');
-        if (!detectBtn || !detectLabel || !toggleBtn) return;
+        const colorNav = document.getElementById('cdp-color-nav');
+        if (!detectBtn || !detectLabel || !colorNav) return;
         detectBtn.className = isDetecting ? 'cdp-active' : 'cdp-inactive';
         if (isDetecting) {
             detectLabel.textContent = detectionMode === DETECTION_MODE_EYEDROPPER
@@ -31,7 +31,7 @@
                 ? 'Pick Pixel Color'
                 : 'Start Style Detection';
         }
-        toggleBtn.classList.toggle('cdp-detecting', isDetecting);
+        colorNav.classList.toggle('cdp-detecting', isDetecting);
     }
 
     function setDetecting(active) {
@@ -65,6 +65,9 @@
         if (!assetBtn) return;
         assetBtn.className = isAssetPickerActive ? 'cdp-active' : 'cdp-inactive';
         assetBtn.textContent = isAssetPickerActive ? 'Picking assets' : 'Asset Picker';
+        assetBtn.title = isAssetPickerActive
+            ? (iconIndexByHash.size > 0 ? 'Hover an asset; known SVG icons are identified automatically' : 'Loading icon matcher...')
+            : 'Pick page assets and identify known SVG icons';
     }
 
     function setAssetPickerActive(active) {
@@ -74,6 +77,16 @@
             if (isInspectActive) setInspectActive(false);
             if (isDetecting) setDetecting(false);
             hideAssetActionPopover();
+            loadIconIndex().then(count => {
+                if (!isAssetPickerActive) return;
+                updateAssetPickerControls();
+                if (count > 0) {
+                    showNotification(count + ' local icons ready', 'success');
+                } else {
+                    const button = document.getElementById('cdp-asset-btn');
+                    if (button) button.title = 'Icon matcher unavailable; asset picking remains active';
+                }
+            });
             showNotification('Asset Picker active', 'info');
             return;
         }
@@ -123,14 +136,17 @@
     }
 
     function setPanelSide(panel, side, shouldNotify = true) {
-        const toggleBtn = document.getElementById('cdp-toggle-btn');
         const nextSide = side === 'left' ? 'left' : 'right';
         const sideChanged = sidebarSide !== nextSide;
         sidebarSide = nextSide;
         panel.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
         panel.setAttribute('data-side', sidebarSide);
-        toggleBtn.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
-        toggleBtn.setAttribute('data-side', sidebarSide);
+        const sideBtn = document.getElementById('cdp-side-btn');
+        if (sideBtn) {
+            const targetSide = sidebarSide === 'left' ? 'right' : 'left';
+            sideBtn.title = 'Move sidebar to ' + targetSide;
+            sideBtn.setAttribute('aria-label', 'Move sidebar to ' + targetSide);
+        }
         safeSetValue(STORAGE_KEYS.sidebarSide, sidebarSide);
         if (shouldNotify && sideChanged) {
             showNotification('Sidebar: ' + (sidebarSide === 'left' ? 'Left' : 'Right'), 'info');
@@ -144,14 +160,15 @@
 
     function setPanelOpen(panel, open) {
         const toggleBtn = document.getElementById('cdp-toggle-btn');
+        const content = document.getElementById('cdp-sidebar-content');
         isPanelOpen = Boolean(open);
         panel.classList.toggle('cdp-hidden', !isPanelOpen);
-        panel.setAttribute('aria-hidden', String(!isPanelOpen));
-        toggleBtn.classList.toggle('cdp-sidebar-open', isPanelOpen);
+        panel.setAttribute('data-open', String(isPanelOpen));
+        content.setAttribute('aria-hidden', String(!isPanelOpen));
         toggleBtn.setAttribute('aria-expanded', String(isPanelOpen));
-        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro');
-        toggleBtn.title = isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro';
-        if (!isPanelOpen && panel.contains(document.activeElement)) {
+        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Close Color Detector Pro' : 'Open Color Detector Pro');
+        toggleBtn.title = isPanelOpen ? 'Close sidebar (Alt+C)' : 'Open sidebar (Alt+C)';
+        if (!isPanelOpen && content.contains(document.activeElement)) {
             toggleBtn.focus();
         }
     }
@@ -172,7 +189,8 @@
     function setupEventListeners() {
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
-        const closeBtn = document.getElementById('cdp-btn-close');
+        const colorNav = document.getElementById('cdp-color-nav');
+        const sideBtn = document.getElementById('cdp-side-btn');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
@@ -189,9 +207,15 @@
             setPanelOpen(panel, !isPanelOpen);
         });
 
-        // Close
-        closeBtn.addEventListener('click', () => {
-            setPanelOpen(panel, false);
+        // Color detector navigation
+        colorNav.addEventListener('click', () => {
+            setPanelOpen(panel, true);
+            detectBtn.focus();
+        });
+
+        // Move sidebar; tetap tersedia saat konten sidebar ditutup.
+        sideBtn.addEventListener('click', () => {
+            setPanelSide(panel, sidebarSide === 'left' ? 'right' : 'left');
         });
 
         // Detect
@@ -260,6 +284,7 @@
         // Tabs
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
+                setPanelOpen(panel, true);
                 selectTab(tab.dataset.tab, true, true);
             });
         });

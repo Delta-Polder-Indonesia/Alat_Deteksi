@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
-// @namespace    https://github.com/JD-YH03D/release
-// @version      2.8.1
+// @namespace    https://github.com/Delta-Polder-Indonesia/Alat_Deteksi
+// @version      3.1.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -11,10 +11,10 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_download
-// @connect      api.npoint.io
+// @connect      raw.githubusercontent.com
 // @connect      *
 // @run-at       document-idle
-// @icon         https://raw.githubusercontent.com/JD-YH03D/BintangToba/main/icon.svg
+// @icon         https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/assets/images/profile.svg
 // @updateURL    https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/dist/ColorDetektor.user.js
 // @downloadURL  https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/dist/ColorDetektor.user.js
 // ==/UserScript==
@@ -23,7 +23,9 @@
     'use strict';
 
     /* ===== CONFIG ===== */
-    const API_URL = 'https://api.npoint.io/a54d755ded5ab6c0e7d1';
+    const REPOSITORY_RAW_BASE_URL = 'https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main';
+    const COLOR_DATABASE_URL = REPOSITORY_RAW_BASE_URL + '/public/data/colors.json';
+    const ICON_INDEX_URL = REPOSITORY_RAW_BASE_URL + '/public/data/icon-index.json';
     const LOG_PREFIX = '[Color Detector Pro]';
     const DETECTION_MODE_EYEDROPPER = 'eyedropper';
     const DETECTION_MODE_COMPUTED = 'computed';
@@ -33,6 +35,15 @@
     const ASSET_DOWNLOAD_TIMEOUT_MS = 45000;
     const SITE_SCAN_ELEMENT_LIMIT = 2500;
     const SITE_SCAN_BATCH_SIZE = 120;
+    const SVG_GEOMETRY_ATTRIBUTES = Object.freeze({
+        path: ['d'],
+        circle: ['cx', 'cy', 'r'],
+        rect: ['x', 'y', 'width', 'height', 'rx', 'ry'],
+        line: ['x1', 'y1', 'x2', 'y2'],
+        ellipse: ['cx', 'cy', 'rx', 'ry'],
+        polyline: ['points'],
+        polygon: ['points'],
+    });
     const INSPECT_CSS_PROPERTIES = Object.freeze([
         'font-family',
         'font-size',
@@ -97,6 +108,10 @@
     let currentAssetHighlight = null;
     let currentPickedAsset = null;
     let pageAssets = [];
+    let iconIndexByHash = new Map();
+    let iconLibraryNames = new Set();
+    let iconIndexLoadPromise = null;
+    let iconMatchCache = new WeakMap();
     let isScanningAssets = false;
     let isDownloadingAssets = false;
     let isInspectActive = false;
@@ -134,6 +149,7 @@
             --cdp-danger: #da3633;
             --cdp-radius: 6px;
             --cdp-sidebar-width: min(460px, calc(100vw - 64px));
+            --cdp-rail-width: 56px;
             --cdp-transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
         }
 
@@ -142,7 +158,7 @@
             position: fixed;
             top: 0;
             right: 0;
-            width: var(--cdp-sidebar-width);
+            width: calc(var(--cdp-sidebar-width) + var(--cdp-rail-width));
             height: 100vh;
             height: 100dvh;
             box-sizing: border-box;
@@ -155,19 +171,14 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--cdp-text-primary);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             overflow: hidden;
-            transform: translateX(0);
-            visibility: visible;
-            transition: transform 0.22s ease, visibility 0s linear 0s;
+            transition: width 0.22s ease, box-shadow 0.22s ease;
             backdrop-filter: none;
         }
         #cdp-panel.cdp-hidden {
-            display: flex;
-            transform: translateX(100%);
-            visibility: hidden;
-            pointer-events: none;
-            transition: transform 0.22s ease, visibility 0s linear 0.22s;
+            width: var(--cdp-rail-width);
+            box-shadow: -5px 0 18px rgba(1,4,9,0.3);
         }
         #cdp-panel.cdp-sidebar-left {
             right: auto;
@@ -177,7 +188,160 @@
             box-shadow: 12px 0 28px rgba(1,4,9,0.42);
         }
         #cdp-panel.cdp-sidebar-left.cdp-hidden {
-            transform: translateX(-100%);
+            box-shadow: 5px 0 18px rgba(1,4,9,0.3);
+        }
+        #cdp-sidebar-content {
+            width: var(--cdp-sidebar-width);
+            min-width: var(--cdp-sidebar-width);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--cdp-bg-dark);
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.14s ease, visibility 0s linear 0s;
+        }
+        #cdp-panel.cdp-hidden #cdp-sidebar-content {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.1s ease, visibility 0s linear 0.22s;
+        }
+
+        /* ----- NAVIGATION RAIL ----- */
+        #cdp-sidebar-rail {
+            width: var(--cdp-rail-width);
+            min-width: var(--cdp-rail-width);
+            height: 100%;
+            box-sizing: border-box;
+            background: var(--cdp-bg-card);
+            border-right: 1px solid var(--cdp-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 6px;
+            gap: 4px;
+            overflow: hidden;
+            z-index: 2;
+        }
+        .cdp-rail-btn,
+        .cdp-tab {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            min-height: 42px;
+            padding: 0;
+            border: 1px solid transparent;
+            border-radius: var(--cdp-radius);
+            background: transparent;
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--cdp-transition);
+        }
+        .cdp-rail-btn:hover,
+        .cdp-tab:hover {
+            background: #21262d;
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-primary);
+        }
+        .cdp-rail-btn:focus-visible,
+        .cdp-tab:focus-visible {
+            outline: 2px solid var(--cdp-primary);
+            outline-offset: 1px;
+        }
+        .cdp-rail-toggle {
+            color: var(--cdp-text-primary);
+            background: var(--cdp-bg-dark);
+            border-color: var(--cdp-border);
+        }
+        .cdp-rail-toggle svg {
+            transition: transform 0.22s ease;
+        }
+        #cdp-panel.cdp-hidden .cdp-rail-toggle svg {
+            transform: rotate(180deg);
+        }
+        #cdp-panel.cdp-sidebar-left .cdp-rail-toggle svg {
+            transform: rotate(180deg);
+        }
+        #cdp-panel.cdp-sidebar-left.cdp-hidden .cdp-rail-toggle svg {
+            transform: rotate(0deg);
+        }
+        .cdp-rail-divider {
+            width: 30px;
+            height: 1px;
+            margin: 3px 0;
+            background: var(--cdp-border);
+            flex-shrink: 0;
+        }
+        #cdp-color-nav.cdp-detecting {
+            color: #fff;
+            background: var(--cdp-success);
+            border-color: #2ea043;
+        }
+        #cdp-tabs {
+            width: 100%;
+            min-height: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: none;
+        }
+        #cdp-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .cdp-side-btn {
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .cdp-tab.cdp-tab-active {
+            color: #fff;
+            background: var(--cdp-primary-dark);
+            border-color: var(--cdp-primary);
+            box-shadow: 0 0 0 1px rgba(88,166,255,0.12);
+        }
+        .cdp-tab-label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .cdp-tab-badge {
+            position: absolute;
+            top: 2px;
+            right: 1px;
+            min-width: 14px;
+            max-width: 26px;
+            height: 14px;
+            box-sizing: border-box;
+            padding: 0 3px;
+            border-radius: 7px;
+            background: #30363d;
+            color: var(--cdp-text-primary);
+            border: 1px solid var(--cdp-bg-card);
+            font-size: 8px;
+            line-height: 12px;
+            font-weight: 700;
+            text-align: center;
+            overflow: hidden;
+        }
+        .cdp-tab.cdp-tab-active .cdp-tab-badge {
+            background: var(--cdp-bg-dark);
+            color: #fff;
         }
 
         /* ----- HEADER ----- */
@@ -270,31 +434,6 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        #cdp-header-actions {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .cdp-header-btn {
-            width: 28px;
-            height: 28px;
-            border: 1px solid var(--cdp-border);
-            border-radius: var(--cdp-radius);
-            background: var(--cdp-bg-dark);
-            color: var(--cdp-text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            transition: var(--cdp-transition);
-        }
-        .cdp-header-btn:hover {
-            background: #21262d;
-            color: var(--cdp-text-primary);
-            border-color: #8b949e;
-        }
-
         /* ----- TOOLBAR ----- */
         #cdp-toolbar {
             padding: 10px 14px;
@@ -465,51 +604,6 @@
             font-size: 11px;
             color: var(--cdp-text-muted);
             white-space: nowrap;
-        }
-
-        /* ----- TABS ----- */
-        #cdp-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            background: var(--cdp-bg-card);
-            border-bottom: 1px solid var(--cdp-border);
-            flex-shrink: 0;
-        }
-        .cdp-tab {
-            flex: 1 0 33.333%;
-            padding: 9px 6px;
-            border: none;
-            border-right: 1px solid var(--cdp-border);
-            border-bottom: 1px solid var(--cdp-border);
-            background: var(--cdp-bg-card);
-            color: var(--cdp-text-secondary);
-            font-family: inherit;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--cdp-transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            text-transform: none;
-        }
-        .cdp-tab:hover {
-            background: #21262d;
-            color: var(--cdp-text-primary);
-        }
-        .cdp-tab.cdp-tab-active {
-            color: var(--cdp-text-primary);
-            background: var(--cdp-bg-dark);
-            box-shadow: inset 0 -2px 0 var(--cdp-primary);
-        }
-        .cdp-tab-badge {
-            font-size: 10px;
-            background: #30363d;
-            color: var(--cdp-text-secondary);
-            padding: 1px 6px;
-            border-radius: 999px;
-            font-weight: 600;
         }
 
         /* ----- SEARCH ----- */
@@ -730,6 +824,10 @@
             line-height: 1.4;
             word-break: break-word;
         }
+        .cdp-asset-icon-match {
+            color: #3fb950;
+            font-weight: 600;
+        }
         .cdp-asset-card-actions {
             display: flex;
             gap: 6px;
@@ -934,42 +1032,6 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             color: var(--cdp-text-secondary);
             line-height: 1.4;
-        }
-
-        /* ----- TOGGLE BUTTON ----- */
-        #cdp-toggle-btn {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 46px;
-            height: 46px;
-            box-sizing: border-box;
-            border-radius: var(--cdp-radius);
-            border: 1px solid var(--cdp-border);
-            background: var(--cdp-bg-card);
-            color: var(--cdp-text-primary);
-            cursor: pointer;
-            z-index: 2147483647;
-            box-shadow: 0 8px 22px rgba(1,4,9,0.34);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: left 0.22s ease, right 0.22s ease, var(--cdp-transition);
-        }
-        #cdp-toggle-btn.cdp-sidebar-open {
-            right: calc(var(--cdp-sidebar-width) + 12px);
-        }
-        #cdp-toggle-btn.cdp-sidebar-left {
-            right: auto;
-            left: 24px;
-        }
-        #cdp-toggle-btn.cdp-sidebar-left.cdp-sidebar-open {
-            left: calc(var(--cdp-sidebar-width) + 12px);
-        }
-        #cdp-toggle-btn:hover,
-        #cdp-toggle-btn.cdp-detecting {
-            background: #21262d;
-            border-color: var(--cdp-primary);
         }
 
         /* ----- TOOLTIP AND POPOVERS ----- */
@@ -1703,6 +1765,64 @@
         }
     }
 
+    function svgGeometrySignature(svg) {
+        if (!svg || typeof svg.querySelectorAll !== 'function') return '';
+        const selector = Object.keys(SVG_GEOMETRY_ATTRIBUTES).join(',');
+        return Array.from(svg.querySelectorAll(selector)).map(element => {
+            const tag = element.tagName.toLowerCase();
+            const attributes = SVG_GEOMETRY_ATTRIBUTES[tag]
+                .map(name => `${name}=${element.getAttribute(name) || ''}`)
+                .join(';');
+            return `${tag}:${attributes}`;
+        }).join('|');
+    }
+
+    function svgElementFromCode(svgCode) {
+        if (!svgCode) return null;
+        try {
+            const doc = new DOMParser().parseFromString(svgCode, 'image/svg+xml');
+            if (doc.querySelector('parsererror')) return null;
+            return doc.documentElement && doc.documentElement.tagName.toLowerCase() === 'svg'
+                ? doc.documentElement
+                : null;
+        } catch (err) {
+            logError('svgElementFromCode', err);
+            return null;
+        }
+    }
+
+    function fnv1aHash(text) {
+        let hash = 0x811c9dc5;
+        for (let index = 0; index < text.length; index += 1) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 0x01000193) >>> 0;
+        }
+        return hash.toString(16).padStart(8, '0');
+    }
+
+    function identifyBundledIcon(asset) {
+        if (!asset || iconIndexByHash.size === 0) return [];
+        const svgElement = asset.element && asset.element.tagName &&
+            asset.element.tagName.toLowerCase() === 'svg' ? asset.element : null;
+        if (svgElement && iconMatchCache.has(svgElement)) {
+            return iconMatchCache.get(svgElement);
+        }
+
+        let signature = svgElement ? svgGeometrySignature(svgElement) : '';
+        if (!signature && asset.svgCode) {
+            signature = svgGeometrySignature(svgElementFromCode(asset.svgCode));
+        }
+        let matches = signature ? (iconIndexByHash.get(fnv1aHash(signature)) || []) : [];
+
+        if (matches.length === 0) {
+            const candidate = String(asset.name || '').toLowerCase().replace(/\.svg$/i, '');
+            if (iconLibraryNames.has(candidate)) matches = [candidate];
+        }
+        const result = matches.slice();
+        if (svgElement) iconMatchCache.set(svgElement, result);
+        return result;
+    }
+
     function elementLabel(el) {
         if (!el || typeof el.getAttribute !== 'function') return '';
         return el.getAttribute('alt') || el.getAttribute('aria-label') ||
@@ -1821,6 +1941,7 @@
             sizeLabel: 'Unknown',
             thumbnailUrl: '',
             mime: '',
+            iconMatches: [],
         }, base);
         asset.typeLabel = asset.typeLabel || assetTypeLabel(asset);
         asset.badge = asset.badge || assetBadge(asset);
@@ -1833,6 +1954,7 @@
             else if (isDataUri(asset.url)) asset.sizeBytes = dataUriByteLength(asset.url);
         }
         asset.sizeLabel = asset.sizeBytes === null ? asset.sizeLabel : bytesToLabel(asset.sizeBytes);
+        asset.iconMatches = identifyBundledIcon(asset);
         return asset;
     }
 
@@ -1977,6 +2099,48 @@
                 reject(err);
             }
         });
+    }
+
+    function normalizeIconIndex(data) {
+        if (!data || typeof data !== 'object' || !data.hashes || typeof data.hashes !== 'object') {
+            throw new Error('Unexpected icon index shape');
+        }
+        const nextIndex = new Map();
+        const nextNames = new Set();
+        Object.entries(data.hashes).forEach(([hash, names]) => {
+            if (!/^[0-9a-f]{8}$/i.test(hash) || !Array.isArray(names)) return;
+            const validNames = names
+                .map(name => String(name || '').trim())
+                .filter(name => /^[a-z0-9-]+$/.test(name));
+            if (validNames.length === 0) return;
+            nextIndex.set(hash.toLowerCase(), validNames);
+            validNames.forEach(name => nextNames.add(name));
+        });
+        if (nextIndex.size === 0) throw new Error('Icon index did not contain valid entries');
+        iconIndexByHash = nextIndex;
+        iconLibraryNames = nextNames;
+        iconMatchCache = new WeakMap();
+        return nextNames.size;
+    }
+
+    function loadIconIndex() {
+        if (iconIndexByHash.size > 0) return Promise.resolve(iconLibraryNames.size);
+        if (iconIndexLoadPromise) return iconIndexLoadPromise;
+        iconIndexLoadPromise = gmRequest({
+            method: 'GET',
+            url: ICON_INDEX_URL,
+            timeout: ASSET_FETCH_TIMEOUT_MS,
+        }).then(response => {
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error('HTTP status ' + response.status + ' for ' + ICON_INDEX_URL);
+            }
+            return normalizeIconIndex(JSON.parse(response.responseText));
+        }).catch(err => {
+            logError('loadIconIndex', err);
+            iconIndexLoadPromise = null;
+            return 0;
+        });
+        return iconIndexLoadPromise;
     }
 
     async function fetchAssetText(url) {
@@ -2193,6 +2357,7 @@
         pageAssets = [];
         renderCurrentTab();
         try {
+            await loadIconIndex();
             pageAssets = collectPageAssetCandidates();
             for (const asset of pageAssets) {
                 await fetchAssetHeadMeta(asset);
@@ -2499,18 +2664,22 @@
         return ICON_PIPETTE.replace(/\{S\}/g, size);
     }
 
-    function buildUI() {
-        // Toggle Button
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'cdp-toggle-btn';
-        toggleBtn.type = 'button';
-        toggleBtn.innerHTML = pipetteIcon(24);
-        toggleBtn.title = 'Show Color Detector Pro (Alt+C)';
-        toggleBtn.setAttribute('aria-label', 'Show Color Detector Pro');
-        toggleBtn.setAttribute('aria-controls', 'cdp-panel');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        document.body.appendChild(toggleBtn);
+    const NAVIGATION_ICON_PATHS = Object.freeze({
+        panel: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m8 9 3 3-3 3"/>',
+        database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
+        history: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6h4"/>',
+        palette: '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
+        harmony: '<circle cx="15" cy="9" r="7"/><circle cx="9" cy="15" r="7"/>',
+        assets: '<path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect x="8" y="2" width="14" height="14" rx="2"/>',
+        info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        move: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+    });
 
+    function navigationIcon(name, size = 20) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAVIGATION_ICON_PATHS[name]}</svg>`;
+    }
+
+    function buildUI() {
         // Cursor Tooltip
         const tooltip = document.createElement('div');
         tooltip.id = 'cdp-cursor-tooltip';
@@ -2526,13 +2695,55 @@
         const panel = document.createElement('div');
         panel.id = 'cdp-panel';
         panel.classList.add('cdp-hidden');
-        panel.setAttribute('aria-hidden', 'true');
+        panel.setAttribute('data-open', 'false');
         panel.innerHTML = `
+            <aside id="cdp-sidebar-rail" aria-label="Color Detector navigation">
+                <button id="cdp-toggle-btn" class="cdp-rail-btn cdp-rail-toggle" type="button" title="Open sidebar (Alt+C)" aria-label="Open Color Detector Pro" aria-controls="cdp-sidebar-content" aria-expanded="false">
+                    ${navigationIcon('panel', 22)}
+                </button>
+                <div class="cdp-rail-divider"></div>
+                <button id="cdp-color-nav" class="cdp-rail-btn" type="button" title="Color detector" aria-label="Color detector">
+                    ${pipetteIcon(20)}
+                </button>
+                <nav id="cdp-tabs" aria-label="Color Detector sections">
+                    <button class="cdp-tab cdp-tab-active" type="button" data-tab="database" title="Color database" aria-label="Color database">
+                        ${navigationIcon('database')}
+                        <span class="cdp-tab-label">Database</span>
+                        <span class="cdp-tab-badge" id="cdp-db-count">0</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="history" title="Detection history" aria-label="Detection history">
+                        ${navigationIcon('history')}
+                        <span class="cdp-tab-label">History</span>
+                        <span class="cdp-tab-badge" id="cdp-history-count">0</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="palette" title="Color palettes" aria-label="Color palettes">
+                        ${navigationIcon('palette')}
+                        <span class="cdp-tab-label">Palette</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="harmony" title="Color harmony" aria-label="Color harmony">
+                        ${navigationIcon('harmony')}
+                        <span class="cdp-tab-label">Harmony</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="assets" title="Page assets" aria-label="Page assets">
+                        ${navigationIcon('assets')}
+                        <span class="cdp-tab-label">Assets</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="site-info" title="Site information" aria-label="Site information">
+                        ${navigationIcon('info')}
+                        <span class="cdp-tab-label">Site Info</span>
+                    </button>
+                </nav>
+                <button id="cdp-side-btn" class="cdp-rail-btn cdp-side-btn" type="button" title="Move sidebar to left" aria-label="Move sidebar to left">
+                    ${navigationIcon('move')}
+                </button>
+            </aside>
+
+            <main id="cdp-sidebar-content" aria-hidden="true">
             <div id="cdp-header">
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.8.1</span>
+                    <span id="cdp-version">v3.1.0</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
@@ -2541,9 +2752,6 @@
                         </span>
                         <span id="cdp-header-notification-text"></span>
                     </div>
-                </div>
-                <div id="cdp-header-actions">
-                    <button class="cdp-header-btn" id="cdp-btn-close" type="button" title="Hide sidebar" aria-label="Hide sidebar">&times;</button>
                 </div>
             </div>
 
@@ -2583,29 +2791,6 @@
                 </div>
             </div>
 
-            <div id="cdp-tabs">
-                <button class="cdp-tab cdp-tab-active" data-tab="database">
-                    Database
-                    <span class="cdp-tab-badge" id="cdp-db-count">0</span>
-                </button>
-                <button class="cdp-tab" data-tab="history">
-                    History
-                    <span class="cdp-tab-badge" id="cdp-history-count">0</span>
-                </button>
-                <button class="cdp-tab" data-tab="palette">
-                    Palette
-                </button>
-                <button class="cdp-tab" data-tab="harmony">
-                    Harmony
-                </button>
-                <button class="cdp-tab" data-tab="assets">
-                    Assets
-                </button>
-                <button class="cdp-tab" data-tab="site-info">
-                    Site Info
-                </button>
-            </div>
-
             <div id="cdp-search-box">
                 <div id="cdp-search-wrapper">
                     <span id="cdp-search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
@@ -2626,7 +2811,8 @@
                     <span class="cdp-footer-shortcut"><span class="cdp-kbd">Alt</span>+<span class="cdp-kbd">C</span> Toggle</span>
                     <span class="cdp-footer-shortcut"><span class="cdp-kbd">Left</span>/<span class="cdp-kbd">Right</span> Move</span>
                 </div>
-            </div>`;
+            </div>
+            </main>`;
         document.body.appendChild(panel);
 
         const assetActions = document.createElement('div');
@@ -2678,8 +2864,8 @@
     function updateDetectionControls() {
         const detectBtn = document.getElementById('cdp-detect-btn');
         const detectLabel = document.getElementById('cdp-detect-label');
-        const toggleBtn = document.getElementById('cdp-toggle-btn');
-        if (!detectBtn || !detectLabel || !toggleBtn) return;
+        const colorNav = document.getElementById('cdp-color-nav');
+        if (!detectBtn || !detectLabel || !colorNav) return;
         detectBtn.className = isDetecting ? 'cdp-active' : 'cdp-inactive';
         if (isDetecting) {
             detectLabel.textContent = detectionMode === DETECTION_MODE_EYEDROPPER
@@ -2690,7 +2876,7 @@
                 ? 'Pick Pixel Color'
                 : 'Start Style Detection';
         }
-        toggleBtn.classList.toggle('cdp-detecting', isDetecting);
+        colorNav.classList.toggle('cdp-detecting', isDetecting);
     }
 
     function setDetecting(active) {
@@ -2724,6 +2910,9 @@
         if (!assetBtn) return;
         assetBtn.className = isAssetPickerActive ? 'cdp-active' : 'cdp-inactive';
         assetBtn.textContent = isAssetPickerActive ? 'Picking assets' : 'Asset Picker';
+        assetBtn.title = isAssetPickerActive
+            ? (iconIndexByHash.size > 0 ? 'Hover an asset; known SVG icons are identified automatically' : 'Loading icon matcher...')
+            : 'Pick page assets and identify known SVG icons';
     }
 
     function setAssetPickerActive(active) {
@@ -2733,6 +2922,16 @@
             if (isInspectActive) setInspectActive(false);
             if (isDetecting) setDetecting(false);
             hideAssetActionPopover();
+            loadIconIndex().then(count => {
+                if (!isAssetPickerActive) return;
+                updateAssetPickerControls();
+                if (count > 0) {
+                    showNotification(count + ' local icons ready', 'success');
+                } else {
+                    const button = document.getElementById('cdp-asset-btn');
+                    if (button) button.title = 'Icon matcher unavailable; asset picking remains active';
+                }
+            });
             showNotification('Asset Picker active', 'info');
             return;
         }
@@ -2782,14 +2981,17 @@
     }
 
     function setPanelSide(panel, side, shouldNotify = true) {
-        const toggleBtn = document.getElementById('cdp-toggle-btn');
         const nextSide = side === 'left' ? 'left' : 'right';
         const sideChanged = sidebarSide !== nextSide;
         sidebarSide = nextSide;
         panel.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
         panel.setAttribute('data-side', sidebarSide);
-        toggleBtn.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
-        toggleBtn.setAttribute('data-side', sidebarSide);
+        const sideBtn = document.getElementById('cdp-side-btn');
+        if (sideBtn) {
+            const targetSide = sidebarSide === 'left' ? 'right' : 'left';
+            sideBtn.title = 'Move sidebar to ' + targetSide;
+            sideBtn.setAttribute('aria-label', 'Move sidebar to ' + targetSide);
+        }
         safeSetValue(STORAGE_KEYS.sidebarSide, sidebarSide);
         if (shouldNotify && sideChanged) {
             showNotification('Sidebar: ' + (sidebarSide === 'left' ? 'Left' : 'Right'), 'info');
@@ -2803,14 +3005,15 @@
 
     function setPanelOpen(panel, open) {
         const toggleBtn = document.getElementById('cdp-toggle-btn');
+        const content = document.getElementById('cdp-sidebar-content');
         isPanelOpen = Boolean(open);
         panel.classList.toggle('cdp-hidden', !isPanelOpen);
-        panel.setAttribute('aria-hidden', String(!isPanelOpen));
-        toggleBtn.classList.toggle('cdp-sidebar-open', isPanelOpen);
+        panel.setAttribute('data-open', String(isPanelOpen));
+        content.setAttribute('aria-hidden', String(!isPanelOpen));
         toggleBtn.setAttribute('aria-expanded', String(isPanelOpen));
-        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro');
-        toggleBtn.title = isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro';
-        if (!isPanelOpen && panel.contains(document.activeElement)) {
+        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Close Color Detector Pro' : 'Open Color Detector Pro');
+        toggleBtn.title = isPanelOpen ? 'Close sidebar (Alt+C)' : 'Open sidebar (Alt+C)';
+        if (!isPanelOpen && content.contains(document.activeElement)) {
             toggleBtn.focus();
         }
     }
@@ -2831,7 +3034,8 @@
     function setupEventListeners() {
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
-        const closeBtn = document.getElementById('cdp-btn-close');
+        const colorNav = document.getElementById('cdp-color-nav');
+        const sideBtn = document.getElementById('cdp-side-btn');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
@@ -2848,9 +3052,15 @@
             setPanelOpen(panel, !isPanelOpen);
         });
 
-        // Close
-        closeBtn.addEventListener('click', () => {
-            setPanelOpen(panel, false);
+        // Color detector navigation
+        colorNav.addEventListener('click', () => {
+            setPanelOpen(panel, true);
+            detectBtn.focus();
+        });
+
+        // Move sidebar; tetap tersedia saat konten sidebar ditutup.
+        sideBtn.addEventListener('click', () => {
+            setPanelSide(panel, sidebarSide === 'left' ? 'right' : 'left');
         });
 
         // Detect
@@ -2919,6 +3129,7 @@
         // Tabs
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
+                setPanelOpen(panel, true);
                 selectTab(tab.dataset.tab, true, true);
             });
         });
@@ -3034,6 +3245,11 @@
         if (tr.bottom > window.innerHeight) tip.style.top = (e.clientY - tr.height - 10) + 'px';
     }
 
+    function assetIconMatchLabel(asset) {
+        if (!asset || !Array.isArray(asset.iconMatches) || asset.iconMatches.length === 0) return '';
+        return asset.iconMatches.join(' / ');
+    }
+
     function clearAssetHighlight() {
         if (currentAssetHighlight) {
             currentAssetHighlight.classList.remove('cdp-element-highlight');
@@ -3063,8 +3279,13 @@
         icon.classList.add('cdp-asset-tooltip-icon');
         icon.style.background = '';
         icon.textContent = asset.badge;
-        document.getElementById('cdp-tooltip-name').textContent = asset.typeLabel;
-        document.getElementById('cdp-tooltip-hex').textContent = asset.name;
+        const iconMatch = assetIconMatchLabel(asset);
+        document.getElementById('cdp-tooltip-name').textContent = iconMatch
+            ? 'Local icon: ' + iconMatch
+            : asset.typeLabel;
+        document.getElementById('cdp-tooltip-hex').textContent = iconMatch
+            ? asset.typeLabel + ' - exact geometry match'
+            : asset.name;
         tip.classList.add('cdp-tooltip-visible');
         positionTooltip(e, tip);
     }
@@ -3072,8 +3293,13 @@
     function showAssetActionPopover(asset, clientX, clientY) {
         currentPickedAsset = asset;
         const popover = document.getElementById('cdp-asset-action-popover');
-        document.getElementById('cdp-asset-action-title').textContent = asset.typeLabel;
-        document.getElementById('cdp-asset-action-meta').textContent = asset.name;
+        const iconMatch = assetIconMatchLabel(asset);
+        document.getElementById('cdp-asset-action-title').textContent = iconMatch
+            ? 'Local icon: ' + iconMatch
+            : asset.typeLabel;
+        document.getElementById('cdp-asset-action-meta').textContent = iconMatch
+            ? asset.typeLabel + ' - exact geometry match'
+            : asset.name;
         document.getElementById('cdp-asset-copy-svg-btn').disabled = !assetCanCopySvg(asset);
         popover.classList.remove('cdp-hidden');
         popover.style.left = clientX + 12 + 'px';
@@ -3568,6 +3794,10 @@
             pageAssets.forEach(asset => {
                 const checked = asset.selected ? ' checked' : '';
                 const copyDisabled = assetCanCopySvg(asset) ? '' : ' disabled';
+                const iconMatch = assetIconMatchLabel(asset);
+                const matchMeta = iconMatch
+                    ? `<div class="cdp-asset-meta cdp-asset-icon-match">Local icon: ${escapeHtml(iconMatch)}</div>`
+                    : '';
                 html += `
                     <div class="cdp-asset-card" data-asset-id="${escapeHtml(asset.id)}">
                         <div class="cdp-asset-thumb">${renderAssetThumbnail(asset)}</div>
@@ -3577,6 +3807,7 @@
                                 <span class="cdp-asset-name">${escapeHtml(asset.name)}</span>
                             </label>
                             <div class="cdp-asset-meta">${escapeHtml(asset.typeLabel)}</div>
+                            ${matchMeta}
                             <div class="cdp-asset-meta">${escapeHtml(asset.dimensions)} - ${escapeHtml(asset.sizeLabel)}</div>
                             <div class="cdp-asset-card-actions">
                                 <button class="cdp-asset-small-btn cdp-asset-copy-svg" data-asset-id="${escapeHtml(asset.id)}" type="button"${copyDisabled}>Copy SVG</button>
@@ -3891,7 +4122,7 @@
         try {
             GM_xmlhttpRequest({
                 method: 'GET',
-                url: API_URL,
+                url: COLOR_DATABASE_URL,
                 timeout: FETCH_TIMEOUT_MS,
                 onload(response) {
                     try {
@@ -3909,12 +4140,12 @@
                 },
                 onerror(response) {
                     handleColorRequestFailure('Connection error',
-                        { url: API_URL, status: response && response.status },
+                        { url: COLOR_DATABASE_URL, status: response && response.status },
                         isBackgroundRefresh);
                 },
                 ontimeout() {
                     handleColorRequestFailure('Connection timed out',
-                        { url: API_URL, timeoutMs: FETCH_TIMEOUT_MS },
+                        { url: COLOR_DATABASE_URL, timeoutMs: FETCH_TIMEOUT_MS },
                         isBackgroundRefresh);
                 }
             });

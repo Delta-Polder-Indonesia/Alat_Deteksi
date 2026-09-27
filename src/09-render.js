@@ -330,6 +330,10 @@
             pageAssets.forEach(asset => {
                 const checked = asset.selected ? ' checked' : '';
                 const copyDisabled = assetCanCopySvg(asset) ? '' : ' disabled';
+                const iconMatch = assetIconMatchLabel(asset);
+                const matchMeta = iconMatch
+                    ? `<div class="cdp-asset-meta cdp-asset-icon-match">Local icon: ${escapeHtml(iconMatch)}</div>`
+                    : '';
                 html += `
                     <div class="cdp-asset-card" data-asset-id="${escapeHtml(asset.id)}">
                         <div class="cdp-asset-thumb">${renderAssetThumbnail(asset)}</div>
@@ -339,6 +343,7 @@
                                 <span class="cdp-asset-name">${escapeHtml(asset.name)}</span>
                             </label>
                             <div class="cdp-asset-meta">${escapeHtml(asset.typeLabel)}</div>
+                            ${matchMeta}
                             <div class="cdp-asset-meta">${escapeHtml(asset.dimensions)} - ${escapeHtml(asset.sizeLabel)}</div>
                             <div class="cdp-asset-card-actions">
                                 <button class="cdp-asset-small-btn cdp-asset-copy-svg" data-asset-id="${escapeHtml(asset.id)}" type="button"${copyDisabled}>Copy SVG</button>

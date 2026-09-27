@@ -15,8 +15,9 @@ ada di [SKILL.md](SKILL.md).
 - Mode Style tetap tersedia sebagai fallback berbasis computed style.
 - History, sisi sidebar, tab aktif, dan cache database warna disimpan via
   penyimpanan userscript supaya bertahan antar reload.
-- Database warna memakai cache stale-while-revalidate dan 30 warna dasar
-  bawaan sebagai fallback saat jaringan tidak tersedia.
+- Database warna utama dimuat dari `public/data/colors.json` di repository
+  ini, memakai cache stale-while-revalidate dan 30 warna dasar bawaan sebagai
+  fallback saat jaringan tidak tersedia.
 - Tab History dan Palette bisa diekspor sebagai CSS custom properties,
   JSON, atau daftar hex polos.
 - Preview warna menampilkan rasio kontras WCAG terhadap putih dan hitam.
@@ -24,16 +25,21 @@ ada di [SKILL.md](SKILL.md).
   monochromatic dari warna terakhir yang terdeteksi.
 - Mode Asset Picker membantu mengambil SVG, gambar, background image,
   sprite, data URI, dan poster video dari halaman sebagai referensi desain.
+- Saat kursor menyentuh SVG dalam mode Asset Picker, geometri ikon dicocokkan
+  otomatis dengan koleksi lokal dan nama ikon ditampilkan bila cocok.
 - Tab Assets memindai halaman, menampilkan galeri aset, dan mengunduh aset
   terpilih atau semua aset secara berurutan.
 - Mode Inspect menampilkan properti CSS utama elemen dan menyalin deklarasi
   siap tempel.
 - Tab Site Info memindai font terpakai, palet warna, design token `:root`,
   dan sinyal teknologi halaman secara bertahap agar UI tetap responsif.
-- Panel tampil sebagai sidebar responsif dan bergeser masuk atau keluar
-  saat tombol toggle ditekan.
-- Tombol `Left` dan `Right` memindahkan sidebar ke sisi layar yang tidak
-  menutupi konten yang sedang diperiksa.
+- Panel memakai sidebar responsif dengan navigation rail vertikal untuk
+  Database, History, Palette, Harmony, Assets, dan Site Info.
+- Saat sidebar ditutup, navigation rail tetap terlihat sebagai deretan ikon;
+  tombol `panel-right-close` di bagian atas membuka atau menutup konten.
+- Tombol pindah sisi pada navigation rail tetap berfungsi saat konten sidebar
+  ditutup, sehingga rail dapat dipindahkan tanpa membuka panel lebih dahulu.
+- Tombol `Left` dan `Right` juga memindahkan sidebar saat konten sedang terbuka.
 - Tampilan memakai gaya sederhana ala GitHub dengan tombol sedikit
   melengkung dan kartu yang rapi.
 
@@ -54,14 +60,38 @@ Mode otomatis (rebuild tiap kali file di `src/` disimpan):
 node build.js --watch  # atau: npm run watch
 ```
 
-Tidak butuh dependency apa pun — cukup Node.js bawaan.
+Tidak butuh dependency apa pun — cukup Node.js bawaan. Setiap build juga
+memperbarui `public/data/icon-index.json` dari seluruh SVG di
+`public/assets/icons/`, sehingga koleksi ikon dan pencocok otomatis selalu
+sinkron.
+
+## Aset Publik
+
+Aset disimpan dengan nama folder huruf kecil dan dapat digunakan langsung
+melalui raw URL GitHub setelah perubahan tersedia di branch `main`.
+
+| Path | Isi | Raw URL |
+|---|---|---|
+| `public/data/colors.json` | Database 745 nama warna | `https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/data/colors.json` |
+| `public/data/icon-index.json` | Indeks pencocokan 1.847 ikon SVG | `https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/data/icon-index.json` |
+| `public/assets/images/profile.svg` | Ikon utama userscript | `https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/assets/images/profile.svg` |
+| `public/assets/icons/` | Koleksi ikon SVG | Tambahkan nama file setelah path folder, misalnya `search.svg` |
+
+Contoh URL ikon:
+
+```text
+https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/assets/icons/search.svg
+```
+
+Nama path dan file bersifat case-sensitive. Jangan mengubah nama atau lokasi
+aset yang sudah dipublikasikan tanpa memperbarui seluruh URL pemakainya.
 
 ## Struktur `src/`
 
 | File | Isi | Kapan diedit |
 |---|---|---|
 | `meta.js` | Header `==UserScript==` (nama, versi, match, grant) | Naikkan `@version` tiap rilis |
-| `01-config.js` | Konstanta & state global (`API_URL`, flags) | Ganti endpoint API database warna |
+| `01-config.js` | Konstanta dan state global (`COLOR_DATABASE_URL`, flags) | Ganti URL database atau konfigurasi runtime |
 | `02-styles.js` | Seluruh CSS (via `GM_addStyle`) | Ubah tema/warna/ukuran panel |
 | `03-utilities.js` | Konversi warna (hex/rgb/hsl), pencocokan nama warna, clipboard, notifikasi header | Perbaiki logika warna |
 | `05-build-ui.js` | Pembuatan elemen DOM (sidebar, tombol, tooltip) | Ubah struktur/tampilan UI |

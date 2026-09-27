@@ -85,7 +85,7 @@
         try {
             GM_xmlhttpRequest({
                 method: 'GET',
-                url: API_URL,
+                url: COLOR_DATABASE_URL,
                 timeout: FETCH_TIMEOUT_MS,
                 onload(response) {
                     try {
@@ -103,12 +103,12 @@
                 },
                 onerror(response) {
                     handleColorRequestFailure('Connection error',
-                        { url: API_URL, status: response && response.status },
+                        { url: COLOR_DATABASE_URL, status: response && response.status },
                         isBackgroundRefresh);
                 },
                 ontimeout() {
                     handleColorRequestFailure('Connection timed out',
-                        { url: API_URL, timeoutMs: FETCH_TIMEOUT_MS },
+                        { url: COLOR_DATABASE_URL, timeoutMs: FETCH_TIMEOUT_MS },
                         isBackgroundRefresh);
                 }
             });

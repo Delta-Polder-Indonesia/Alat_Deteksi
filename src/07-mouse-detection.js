@@ -75,6 +75,11 @@
         if (tr.bottom > window.innerHeight) tip.style.top = (e.clientY - tr.height - 10) + 'px';
     }
 
+    function assetIconMatchLabel(asset) {
+        if (!asset || !Array.isArray(asset.iconMatches) || asset.iconMatches.length === 0) return '';
+        return asset.iconMatches.join(' / ');
+    }
+
     function clearAssetHighlight() {
         if (currentAssetHighlight) {
             currentAssetHighlight.classList.remove('cdp-element-highlight');
@@ -104,8 +109,13 @@
         icon.classList.add('cdp-asset-tooltip-icon');
         icon.style.background = '';
         icon.textContent = asset.badge;
-        document.getElementById('cdp-tooltip-name').textContent = asset.typeLabel;
-        document.getElementById('cdp-tooltip-hex').textContent = asset.name;
+        const iconMatch = assetIconMatchLabel(asset);
+        document.getElementById('cdp-tooltip-name').textContent = iconMatch
+            ? 'Local icon: ' + iconMatch
+            : asset.typeLabel;
+        document.getElementById('cdp-tooltip-hex').textContent = iconMatch
+            ? asset.typeLabel + ' - exact geometry match'
+            : asset.name;
         tip.classList.add('cdp-tooltip-visible');
         positionTooltip(e, tip);
     }
@@ -113,8 +123,13 @@
     function showAssetActionPopover(asset, clientX, clientY) {
         currentPickedAsset = asset;
         const popover = document.getElementById('cdp-asset-action-popover');
-        document.getElementById('cdp-asset-action-title').textContent = asset.typeLabel;
-        document.getElementById('cdp-asset-action-meta').textContent = asset.name;
+        const iconMatch = assetIconMatchLabel(asset);
+        document.getElementById('cdp-asset-action-title').textContent = iconMatch
+            ? 'Local icon: ' + iconMatch
+            : asset.typeLabel;
+        document.getElementById('cdp-asset-action-meta').textContent = iconMatch
+            ? asset.typeLabel + ' - exact geometry match'
+            : asset.name;
         document.getElementById('cdp-asset-copy-svg-btn').disabled = !assetCanCopySvg(asset);
         popover.classList.remove('cdp-hidden');
         popover.style.left = clientX + 12 + 'px';

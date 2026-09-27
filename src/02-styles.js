@@ -18,6 +18,7 @@
             --cdp-danger: #da3633;
             --cdp-radius: 6px;
             --cdp-sidebar-width: min(460px, calc(100vw - 64px));
+            --cdp-rail-width: 56px;
             --cdp-transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
         }
 
@@ -26,7 +27,7 @@
             position: fixed;
             top: 0;
             right: 0;
-            width: var(--cdp-sidebar-width);
+            width: calc(var(--cdp-sidebar-width) + var(--cdp-rail-width));
             height: 100vh;
             height: 100dvh;
             box-sizing: border-box;
@@ -39,19 +40,14 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--cdp-text-primary);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             overflow: hidden;
-            transform: translateX(0);
-            visibility: visible;
-            transition: transform 0.22s ease, visibility 0s linear 0s;
+            transition: width 0.22s ease, box-shadow 0.22s ease;
             backdrop-filter: none;
         }
         #cdp-panel.cdp-hidden {
-            display: flex;
-            transform: translateX(100%);
-            visibility: hidden;
-            pointer-events: none;
-            transition: transform 0.22s ease, visibility 0s linear 0.22s;
+            width: var(--cdp-rail-width);
+            box-shadow: -5px 0 18px rgba(1,4,9,0.3);
         }
         #cdp-panel.cdp-sidebar-left {
             right: auto;
@@ -61,7 +57,160 @@
             box-shadow: 12px 0 28px rgba(1,4,9,0.42);
         }
         #cdp-panel.cdp-sidebar-left.cdp-hidden {
-            transform: translateX(-100%);
+            box-shadow: 5px 0 18px rgba(1,4,9,0.3);
+        }
+        #cdp-sidebar-content {
+            width: var(--cdp-sidebar-width);
+            min-width: var(--cdp-sidebar-width);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--cdp-bg-dark);
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.14s ease, visibility 0s linear 0s;
+        }
+        #cdp-panel.cdp-hidden #cdp-sidebar-content {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.1s ease, visibility 0s linear 0.22s;
+        }
+
+        /* ----- NAVIGATION RAIL ----- */
+        #cdp-sidebar-rail {
+            width: var(--cdp-rail-width);
+            min-width: var(--cdp-rail-width);
+            height: 100%;
+            box-sizing: border-box;
+            background: var(--cdp-bg-card);
+            border-right: 1px solid var(--cdp-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 6px;
+            gap: 4px;
+            overflow: hidden;
+            z-index: 2;
+        }
+        .cdp-rail-btn,
+        .cdp-tab {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            min-height: 42px;
+            padding: 0;
+            border: 1px solid transparent;
+            border-radius: var(--cdp-radius);
+            background: transparent;
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--cdp-transition);
+        }
+        .cdp-rail-btn:hover,
+        .cdp-tab:hover {
+            background: #21262d;
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-primary);
+        }
+        .cdp-rail-btn:focus-visible,
+        .cdp-tab:focus-visible {
+            outline: 2px solid var(--cdp-primary);
+            outline-offset: 1px;
+        }
+        .cdp-rail-toggle {
+            color: var(--cdp-text-primary);
+            background: var(--cdp-bg-dark);
+            border-color: var(--cdp-border);
+        }
+        .cdp-rail-toggle svg {
+            transition: transform 0.22s ease;
+        }
+        #cdp-panel.cdp-hidden .cdp-rail-toggle svg {
+            transform: rotate(180deg);
+        }
+        #cdp-panel.cdp-sidebar-left .cdp-rail-toggle svg {
+            transform: rotate(180deg);
+        }
+        #cdp-panel.cdp-sidebar-left.cdp-hidden .cdp-rail-toggle svg {
+            transform: rotate(0deg);
+        }
+        .cdp-rail-divider {
+            width: 30px;
+            height: 1px;
+            margin: 3px 0;
+            background: var(--cdp-border);
+            flex-shrink: 0;
+        }
+        #cdp-color-nav.cdp-detecting {
+            color: #fff;
+            background: var(--cdp-success);
+            border-color: #2ea043;
+        }
+        #cdp-tabs {
+            width: 100%;
+            min-height: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: none;
+        }
+        #cdp-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .cdp-side-btn {
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .cdp-tab.cdp-tab-active {
+            color: #fff;
+            background: var(--cdp-primary-dark);
+            border-color: var(--cdp-primary);
+            box-shadow: 0 0 0 1px rgba(88,166,255,0.12);
+        }
+        .cdp-tab-label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .cdp-tab-badge {
+            position: absolute;
+            top: 2px;
+            right: 1px;
+            min-width: 14px;
+            max-width: 26px;
+            height: 14px;
+            box-sizing: border-box;
+            padding: 0 3px;
+            border-radius: 7px;
+            background: #30363d;
+            color: var(--cdp-text-primary);
+            border: 1px solid var(--cdp-bg-card);
+            font-size: 8px;
+            line-height: 12px;
+            font-weight: 700;
+            text-align: center;
+            overflow: hidden;
+        }
+        .cdp-tab.cdp-tab-active .cdp-tab-badge {
+            background: var(--cdp-bg-dark);
+            color: #fff;
         }
 
         /* ----- HEADER ----- */
@@ -154,31 +303,6 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        #cdp-header-actions {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .cdp-header-btn {
-            width: 28px;
-            height: 28px;
-            border: 1px solid var(--cdp-border);
-            border-radius: var(--cdp-radius);
-            background: var(--cdp-bg-dark);
-            color: var(--cdp-text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            transition: var(--cdp-transition);
-        }
-        .cdp-header-btn:hover {
-            background: #21262d;
-            color: var(--cdp-text-primary);
-            border-color: #8b949e;
-        }
-
         /* ----- TOOLBAR ----- */
         #cdp-toolbar {
             padding: 10px 14px;
@@ -349,51 +473,6 @@
             font-size: 11px;
             color: var(--cdp-text-muted);
             white-space: nowrap;
-        }
-
-        /* ----- TABS ----- */
-        #cdp-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            background: var(--cdp-bg-card);
-            border-bottom: 1px solid var(--cdp-border);
-            flex-shrink: 0;
-        }
-        .cdp-tab {
-            flex: 1 0 33.333%;
-            padding: 9px 6px;
-            border: none;
-            border-right: 1px solid var(--cdp-border);
-            border-bottom: 1px solid var(--cdp-border);
-            background: var(--cdp-bg-card);
-            color: var(--cdp-text-secondary);
-            font-family: inherit;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--cdp-transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            text-transform: none;
-        }
-        .cdp-tab:hover {
-            background: #21262d;
-            color: var(--cdp-text-primary);
-        }
-        .cdp-tab.cdp-tab-active {
-            color: var(--cdp-text-primary);
-            background: var(--cdp-bg-dark);
-            box-shadow: inset 0 -2px 0 var(--cdp-primary);
-        }
-        .cdp-tab-badge {
-            font-size: 10px;
-            background: #30363d;
-            color: var(--cdp-text-secondary);
-            padding: 1px 6px;
-            border-radius: 999px;
-            font-weight: 600;
         }
 
         /* ----- SEARCH ----- */
@@ -614,6 +693,10 @@
             line-height: 1.4;
             word-break: break-word;
         }
+        .cdp-asset-icon-match {
+            color: #3fb950;
+            font-weight: 600;
+        }
         .cdp-asset-card-actions {
             display: flex;
             gap: 6px;
@@ -818,42 +901,6 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             color: var(--cdp-text-secondary);
             line-height: 1.4;
-        }
-
-        /* ----- TOGGLE BUTTON ----- */
-        #cdp-toggle-btn {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 46px;
-            height: 46px;
-            box-sizing: border-box;
-            border-radius: var(--cdp-radius);
-            border: 1px solid var(--cdp-border);
-            background: var(--cdp-bg-card);
-            color: var(--cdp-text-primary);
-            cursor: pointer;
-            z-index: 2147483647;
-            box-shadow: 0 8px 22px rgba(1,4,9,0.34);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: left 0.22s ease, right 0.22s ease, var(--cdp-transition);
-        }
-        #cdp-toggle-btn.cdp-sidebar-open {
-            right: calc(var(--cdp-sidebar-width) + 12px);
-        }
-        #cdp-toggle-btn.cdp-sidebar-left {
-            right: auto;
-            left: 24px;
-        }
-        #cdp-toggle-btn.cdp-sidebar-left.cdp-sidebar-open {
-            left: calc(var(--cdp-sidebar-width) + 12px);
-        }
-        #cdp-toggle-btn:hover,
-        #cdp-toggle-btn.cdp-detecting {
-            background: #21262d;
-            border-color: var(--cdp-primary);
         }
 
         /* ----- TOOLTIP AND POPOVERS ----- */

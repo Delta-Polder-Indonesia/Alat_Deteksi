@@ -11,18 +11,22 @@
         return ICON_PIPETTE.replace(/\{S\}/g, size);
     }
 
-    function buildUI() {
-        // Toggle Button
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'cdp-toggle-btn';
-        toggleBtn.type = 'button';
-        toggleBtn.innerHTML = pipetteIcon(24);
-        toggleBtn.title = 'Show Color Detector Pro (Alt+C)';
-        toggleBtn.setAttribute('aria-label', 'Show Color Detector Pro');
-        toggleBtn.setAttribute('aria-controls', 'cdp-panel');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        document.body.appendChild(toggleBtn);
+    const NAVIGATION_ICON_PATHS = Object.freeze({
+        panel: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m8 9 3 3-3 3"/>',
+        database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
+        history: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6h4"/>',
+        palette: '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
+        harmony: '<circle cx="15" cy="9" r="7"/><circle cx="9" cy="15" r="7"/>',
+        assets: '<path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect x="8" y="2" width="14" height="14" rx="2"/>',
+        info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        move: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+    });
 
+    function navigationIcon(name, size = 20) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAVIGATION_ICON_PATHS[name]}</svg>`;
+    }
+
+    function buildUI() {
         // Cursor Tooltip
         const tooltip = document.createElement('div');
         tooltip.id = 'cdp-cursor-tooltip';
@@ -38,13 +42,55 @@
         const panel = document.createElement('div');
         panel.id = 'cdp-panel';
         panel.classList.add('cdp-hidden');
-        panel.setAttribute('aria-hidden', 'true');
+        panel.setAttribute('data-open', 'false');
         panel.innerHTML = `
+            <aside id="cdp-sidebar-rail" aria-label="Color Detector navigation">
+                <button id="cdp-toggle-btn" class="cdp-rail-btn cdp-rail-toggle" type="button" title="Open sidebar (Alt+C)" aria-label="Open Color Detector Pro" aria-controls="cdp-sidebar-content" aria-expanded="false">
+                    ${navigationIcon('panel', 22)}
+                </button>
+                <div class="cdp-rail-divider"></div>
+                <button id="cdp-color-nav" class="cdp-rail-btn" type="button" title="Color detector" aria-label="Color detector">
+                    ${pipetteIcon(20)}
+                </button>
+                <nav id="cdp-tabs" aria-label="Color Detector sections">
+                    <button class="cdp-tab cdp-tab-active" type="button" data-tab="database" title="Color database" aria-label="Color database">
+                        ${navigationIcon('database')}
+                        <span class="cdp-tab-label">Database</span>
+                        <span class="cdp-tab-badge" id="cdp-db-count">0</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="history" title="Detection history" aria-label="Detection history">
+                        ${navigationIcon('history')}
+                        <span class="cdp-tab-label">History</span>
+                        <span class="cdp-tab-badge" id="cdp-history-count">0</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="palette" title="Color palettes" aria-label="Color palettes">
+                        ${navigationIcon('palette')}
+                        <span class="cdp-tab-label">Palette</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="harmony" title="Color harmony" aria-label="Color harmony">
+                        ${navigationIcon('harmony')}
+                        <span class="cdp-tab-label">Harmony</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="assets" title="Page assets" aria-label="Page assets">
+                        ${navigationIcon('assets')}
+                        <span class="cdp-tab-label">Assets</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="site-info" title="Site information" aria-label="Site information">
+                        ${navigationIcon('info')}
+                        <span class="cdp-tab-label">Site Info</span>
+                    </button>
+                </nav>
+                <button id="cdp-side-btn" class="cdp-rail-btn cdp-side-btn" type="button" title="Move sidebar to left" aria-label="Move sidebar to left">
+                    ${navigationIcon('move')}
+                </button>
+            </aside>
+
+            <main id="cdp-sidebar-content" aria-hidden="true">
             <div id="cdp-header">
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.8.1</span>
+                    <span id="cdp-version">v3.1.0</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
@@ -53,9 +99,6 @@
                         </span>
                         <span id="cdp-header-notification-text"></span>
                     </div>
-                </div>
-                <div id="cdp-header-actions">
-                    <button class="cdp-header-btn" id="cdp-btn-close" type="button" title="Hide sidebar" aria-label="Hide sidebar">&times;</button>
                 </div>
             </div>
 
@@ -95,29 +138,6 @@
                 </div>
             </div>
 
-            <div id="cdp-tabs">
-                <button class="cdp-tab cdp-tab-active" data-tab="database">
-                    Database
-                    <span class="cdp-tab-badge" id="cdp-db-count">0</span>
-                </button>
-                <button class="cdp-tab" data-tab="history">
-                    History
-                    <span class="cdp-tab-badge" id="cdp-history-count">0</span>
-                </button>
-                <button class="cdp-tab" data-tab="palette">
-                    Palette
-                </button>
-                <button class="cdp-tab" data-tab="harmony">
-                    Harmony
-                </button>
-                <button class="cdp-tab" data-tab="assets">
-                    Assets
-                </button>
-                <button class="cdp-tab" data-tab="site-info">
-                    Site Info
-                </button>
-            </div>
-
             <div id="cdp-search-box">
                 <div id="cdp-search-wrapper">
                     <span id="cdp-search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
@@ -138,7 +158,8 @@
                     <span class="cdp-footer-shortcut"><span class="cdp-kbd">Alt</span>+<span class="cdp-kbd">C</span> Toggle</span>
                     <span class="cdp-footer-shortcut"><span class="cdp-kbd">Left</span>/<span class="cdp-kbd">Right</span> Move</span>
                 </div>
-            </div>`;
+            </div>
+            </main>`;
         document.body.appendChild(panel);
 
         const assetActions = document.createElement('div');

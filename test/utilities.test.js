@@ -14,7 +14,7 @@ function loadUtilities() {
         console,
     };
 
-    vm.runInNewContext(`${source}\nmodule.exports = { hexToRgb, rgbToHsl, colorDistance, getContrastColor, rgbStringToHex, escapeHtml };`, sandbox, {
+    vm.runInNewContext(`${source}\nmodule.exports = { hexToRgb, rgbToHsl, colorDistance, getContrastColor, rgbStringToHex, escapeHtml, fnv1aHash };`, sandbox, {
         filename: sourcePath,
     });
 
@@ -80,6 +80,7 @@ const {
     getContrastColor,
     rgbStringToHex,
     escapeHtml,
+    fnv1aHash,
 } = loadUtilities();
 
 function plain(value) {
@@ -133,6 +134,16 @@ test('escapeHtml escapes characters used in HTML text and attributes', () => {
     assert.equal(escapeHtml('&<>"\''), '&amp;&lt;&gt;&quot;&#39;');
     assert.equal(escapeHtml('Color Detector'), 'Color Detector');
     assert.equal(escapeHtml(123), '123');
+});
+
+test('fnv1aHash matches the generated icon index', () => {
+    const signature = 'ellipse:cx=12;cy=5;rx=9;ry=3|' +
+        'path:d=M3 5V19A9 3 0 0 0 21 19V5|' +
+        'path:d=M3 12A9 3 0 0 0 21 12';
+    const indexPath = path.join(__dirname, '..', 'public', 'data', 'icon-index.json');
+    const iconIndex = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+
+    assert.deepEqual(iconIndex.hashes[fnv1aHash(signature)], ['database']);
 });
 
 test('copyToClipboard shows a compact success message instead of copied SVG code', async () => {
