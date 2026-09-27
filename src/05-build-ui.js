@@ -27,6 +27,11 @@
     }
 
     function buildUI() {
+        // Cegah duplikasi panel jika buildUI dipanggil lebih dari sekali di dokumen yang sama
+        if (document.getElementById('cdp-panel') || document.getElementById('cdp-sidebar-rail')) {
+            return;
+        }
+
         // Cursor Tooltip
         const tooltip = document.createElement('div');
         tooltip.id = 'cdp-cursor-tooltip';
@@ -90,7 +95,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v3.1.0</span>
+                    <span id="cdp-version">v3.1.1</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
