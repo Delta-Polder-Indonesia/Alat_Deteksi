@@ -36,7 +36,7 @@
         if (!browserSupportsEyeDropper()) {
             setDetectionMode(DETECTION_MODE_COMPUTED);
             setDetecting(true);
-            showToast('Pixel mode unavailable; using style mode');
+            showNotification('Using Style mode', 'info');
             return;
         }
 
@@ -54,9 +54,9 @@
         } catch (err) {
             logError('startEyeDropperDetection', err);
             if (err && err.name === 'AbortError') {
-                showToast('Pixel selection canceled');
+                showNotification('Selection canceled', 'info');
             } else {
-                showToast('Pixel mode failed; using style mode');
+                showNotification('Pixel mode failed', 'error');
                 setDetectionMode(DETECTION_MODE_COMPUTED);
                 setDetecting(true);
                 keepComputedModeActive = true;
@@ -198,15 +198,15 @@
         const data = inspectDataFromElement(target);
         isInspectFrozen = true;
         renderInspectCard(data, clientX, clientY, true);
-        showToast('Inspect card pinned');
+        showNotification('Inspector pinned', 'info');
     }
 
     function copyCurrentInspectCss() {
         if (!currentInspectData) {
-            showToast('Nothing to copy');
+            showNotification('Nothing to copy', 'error');
             return;
         }
-        copyToClipboard(currentInspectData.cssText);
+        copyToClipboard(currentInspectData.cssText, 'CSS copied');
     }
 
     function handleMouseMove(e) {

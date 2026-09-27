@@ -89,28 +89,6 @@
         }
     }
 
-    function savePanelPosition(panel) {
-        const rect = panel.getBoundingClientRect();
-        writeJsonValue(STORAGE_KEYS.panelPosition, {
-            left: Math.round(rect.left),
-            top: Math.round(rect.top),
-        });
-    }
-
-    function restorePanelPosition(panel) {
-        const pos = readJsonValue(STORAGE_KEYS.panelPosition, null);
-        if (!pos) return;
-        const left = Number(pos.left);
-        const top = Number(pos.top);
-        if (!Number.isFinite(left) || !Number.isFinite(top)) {
-            logError('restorePanelPosition', new Error('Invalid stored panel position'));
-            return;
-        }
-        panel.style.left = Math.max(4, left) + 'px';
-        panel.style.top = Math.max(4, top) + 'px';
-        panel.style.right = 'auto';
-    }
-
     function normalizeStoredHistoryItem(item) {
         if (!item || typeof item !== 'object') return null;
         const hex = normalizeHex(item.hex);
@@ -293,19 +271,25 @@
             .toUpperCase();
     }
 
-    // Timer disimpan agar toast beruntun tidak saling menutup lebih cepat
-    // (timeout milik toast lama tidak boleh menyembunyikan toast baru).
-    let toastTimer = null;
+    function showNotification(message, type = 'info') {
+        const notification = document.getElementById('cdp-header-notification');
+        const text = document.getElementById('cdp-header-notification-text');
+        if (!notification || !text) return;
 
-    function showToast(msg) {
-        const t = document.getElementById('cdp-toast');
-        t.textContent = msg;
-        t.classList.add('cdp-toast-show');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => t.classList.remove('cdp-toast-show'), 2000);
+        const normalizedType = type === 'success' || type === 'error' ? type : 'info';
+        notification.className = `cdp-notification-${normalizedType} cdp-notification-visible`;
+        notification.setAttribute('role', normalizedType === 'error' ? 'alert' : 'status');
+        notification.setAttribute('aria-live', normalizedType === 'error' ? 'assertive' : 'polite');
+        text.textContent = String(message);
+
+        clearTimeout(notificationTimer);
+        notificationTimer = setTimeout(() => {
+            notification.classList.remove('cdp-notification-visible');
+            notificationTimer = null;
+        }, 2200);
     }
 
-    function copyToClipboardFallback(text, clipboardErr) {
+    function copyToClipboardFallback(text, clipboardErr, successMessage) {
         let ta = null;
         try {
             ta = document.createElement('textarea');
@@ -314,25 +298,25 @@
             if (!document.execCommand('copy')) {
                 throw new Error('document.execCommand returned false');
             }
-            showToast('Copied: ' + text);
+            showNotification(successMessage, 'success');
         } catch (fallbackErr) {
             logError('copyToClipboard fallback', { clipboardErr, fallbackErr });
-            showToast('Copy failed');
+            showNotification('Copy failed', 'error');
         } finally {
             if (ta && ta.parentNode) ta.parentNode.removeChild(ta);
         }
     }
 
-    function copyToClipboard(text) {
+    function copyToClipboard(text, successMessage = 'Copied') {
         if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
-            copyToClipboardFallback(text, new Error('Clipboard API is not available'));
+            copyToClipboardFallback(text, new Error('Clipboard API is not available'), successMessage);
             return;
         }
         navigator.clipboard.writeText(text).then(() => {
-            showToast('Copied: ' + text);
+            showNotification(successMessage, 'success');
         }).catch((clipboardErr) => {
             logError('copyToClipboard clipboard API', clipboardErr);
-            copyToClipboardFallback(text, clipboardErr);
+            copyToClipboardFallback(text, clipboardErr, successMessage);
         });
     }
 
@@ -340,8 +324,7 @@
     function isCdpElement(el) {
         return !!(el && typeof el.closest === 'function' &&
             (el.closest('#cdp-panel') || el.closest('#cdp-toggle-btn') ||
-            el.closest('#cdp-cursor-tooltip') || el.closest('#cdp-toast') ||
-            el.closest('#cdp-asset-action-popover')));
+            el.closest('#cdp-cursor-tooltip') || el.closest('#cdp-asset-action-popover')));
     }
 
     function isDataUri(value) {
@@ -875,15 +858,15 @@
     async function copyAssetSvgCode(asset) {
         try {
             if (!assetCanCopySvg(asset)) {
-                showToast('SVG code unavailable');
+                showNotification('SVG unavailable', 'error');
                 return;
             }
             const svgCode = await assetSvgCode(asset);
             if (!svgCode) throw new Error('SVG code is empty');
-            copyToClipboard(svgCode);
+            copyToClipboard(svgCode, 'SVG copied');
         } catch (err) {
             logError('copyAssetSvgCode', err);
-            showToast('Copy SVG failed');
+            showNotification('SVG copy failed', 'error');
         }
     }
 
@@ -948,10 +931,10 @@
         try {
             const url = await assetDownloadUrl(asset);
             await gmDownload(url, assetFilename(asset));
-            showToast('Downloaded: ' + assetFilename(asset));
+            showNotification('Download complete', 'success');
         } catch (err) {
             logError('downloadAsset', err);
-            showToast('Download failed');
+            showNotification('Download failed', 'error');
             throw err;
         }
     }
@@ -1032,10 +1015,10 @@
             for (const asset of pageAssets) {
                 await fetchAssetHeadMeta(asset);
             }
-            showToast(pageAssets.length + ' assets found');
+            showNotification(pageAssets.length + ' assets found', 'success');
         } catch (err) {
             logError('scanPageAssets', err);
-            showToast('Asset scan failed');
+            showNotification('Asset scan failed', 'error');
         } finally {
             isScanningAssets = false;
             if (activeTab === 'assets') renderCurrentTab();
@@ -1312,10 +1295,10 @@
                 limitReached: elements.length > limit,
                 scannedAt: new Date().toLocaleTimeString(),
             };
-            showToast('Site info scan complete');
+            showNotification('Site scan complete', 'success');
         } catch (err) {
             logError('scanSiteInfo', err);
-            showToast('Site info scan failed');
+            showNotification('Site scan failed', 'error');
         } finally {
             isScanningSiteInfo = false;
             if (activeTab === 'site-info') renderCurrentTab();

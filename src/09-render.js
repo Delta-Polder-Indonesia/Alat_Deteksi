@@ -76,7 +76,7 @@
                 ? detectionHistory.map(item => ({ name: item.name, hex: item.hex }))
                 : paletteEntries();
             if (entries.length === 0) {
-                showToast('Nothing to export');
+                showNotification('Nothing to export', 'info');
                 return;
             }
 
@@ -98,10 +98,10 @@
                 throw new Error('Unsupported export format: ' + format);
             }
 
-            copyToClipboard(text);
+            copyToClipboard(text, 'Export copied');
         } catch (err) {
             logError('exportColors ' + source + ' ' + format, err);
-            showToast('Export failed');
+            showNotification('Export failed', 'error');
         }
     }
 
@@ -367,7 +367,7 @@
             selectedBtn.addEventListener('click', () => {
                 const selected = selectedPageAssets(container);
                 if (selected.length === 0) {
-                    showToast('No assets selected');
+                    showNotification('No assets selected', 'info');
                     return;
                 }
                 downloadAssetsSequential(selected);
@@ -511,7 +511,7 @@
         });
         container.querySelectorAll('.cdp-token-row').forEach(row => {
             row.addEventListener('click', () => {
-                copyToClipboard(`${row.dataset.tokenName}: ${row.dataset.tokenValue};`);
+                copyToClipboard(`${row.dataset.tokenName}: ${row.dataset.tokenValue};`, 'Token copied');
             });
         });
     }
@@ -542,10 +542,10 @@
                 try {
                     const scheme = schemes.find(item => item.key === btn.dataset.harmonyCopy);
                     if (!scheme) throw new Error('Harmony scheme not found: ' + btn.dataset.harmonyCopy);
-                    copyToClipboard(scheme.colors.join('\n'));
+                    copyToClipboard(scheme.colors.join('\n'), 'Scheme copied');
                 } catch (err) {
                     logError('copyHarmonyScheme', err);
-                    showToast('Copy failed');
+                    showNotification('Copy failed', 'error');
                 }
             });
         });

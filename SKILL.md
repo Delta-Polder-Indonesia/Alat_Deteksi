@@ -16,12 +16,10 @@ lalu digabung oleh `build.js` menjadi satu file siap pakai di
 | `src/00-header.js` | Pembuka IIFE dan `'use strict'` |
 | `src/01-config.js` | Konstanta dan state global |
 | `src/02-styles.js` | Seluruh CSS via `GM_addStyle` |
-| `src/03-utilities.js` | Konversi warna, pencocokan nama, clipboard, toast |
-| `src/04-viewport-clamp.js` | Menjaga panel tetap di dalam layar |
-| `src/05-build-ui.js` | Pembuatan elemen DOM panel, tombol, tooltip |
+| `src/03-utilities.js` | Konversi warna, pencocokan nama, clipboard, notifikasi header |
+| `src/05-build-ui.js` | Pembuatan elemen DOM sidebar, tombol, tooltip |
 | `src/06-event-listeners.js` | Pemasangan semua event listener |
 | `src/07-mouse-detection.js` | Hover highlight dan klik deteksi warna |
-| `src/08-drag-panel.js` | Drag panel dengan boundary clamp |
 | `src/09-render.js` | Render list database, history, palette |
 | `src/10-fetch-colors.js` | Fetch database warna via `GM_xmlhttpRequest` |
 | `src/11-init.js` | Inisialisasi |
@@ -127,7 +125,7 @@ Diwajibkan:
 
 - Setiap `setTimeout`/interval yang mengubah state UI bersama harus
   menyimpan dan membatalkan timer sebelumnya (`clearTimeout`) agar callback
-  lama tidak menimpa keadaan baru. Contoh: `showToast()`.
+  lama tidak menimpa keadaan baru. Contoh: `showNotification()`.
 - Setiap operasi async (fetch, callback GM) harus punya `timeout` dan
   handler untuk semua jalur akhir: sukses, error, dan timeout. UI tidak
   boleh menggantung di keadaan loading selamanya.

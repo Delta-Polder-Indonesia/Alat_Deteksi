@@ -13,7 +13,7 @@ ada di [SKILL.md](SKILL.md).
 - Mode Pixel memakai EyeDropper API bila tersedia untuk membaca warna piksel
   asli, termasuk pada gambar dan gradient.
 - Mode Style tetap tersedia sebagai fallback berbasis computed style.
-- History, posisi panel, tab aktif, dan cache database warna disimpan via
+- History, sisi sidebar, tab aktif, dan cache database warna disimpan via
   penyimpanan userscript supaya bertahan antar reload.
 - Database warna memakai cache stale-while-revalidate dan 30 warna dasar
   bawaan sebagai fallback saat jaringan tidak tersedia.
@@ -30,8 +30,12 @@ ada di [SKILL.md](SKILL.md).
   siap tempel.
 - Tab Site Info memindai font terpakai, palet warna, design token `:root`,
   dan sinyal teknologi halaman secara bertahap agar UI tetap responsif.
-- Tampilan panel memakai gaya sederhana ala GitHub: tombol kotak sedikit
-  melengkung, kartu rapi, dan tanpa efek gerak dekoratif.
+- Panel tampil sebagai sidebar responsif dan bergeser masuk atau keluar
+  saat tombol toggle ditekan.
+- Tombol `Left` dan `Right` memindahkan sidebar ke sisi layar yang tidak
+  menutupi konten yang sedang diperiksa.
+- Tampilan memakai gaya sederhana ala GitHub dengan tombol sedikit
+  melengkung dan kartu yang rapi.
 
 ## Alur Kerja
 
@@ -59,12 +63,10 @@ Tidak butuh dependency apa pun — cukup Node.js bawaan.
 | `meta.js` | Header `==UserScript==` (nama, versi, match, grant) | Naikkan `@version` tiap rilis |
 | `01-config.js` | Konstanta & state global (`API_URL`, flags) | Ganti endpoint API database warna |
 | `02-styles.js` | Seluruh CSS (via `GM_addStyle`) | Ubah tema/warna/ukuran panel |
-| `03-utilities.js` | Konversi warna (hex/rgb/hsl), pencocokan nama warna, clipboard, toast | Perbaiki logika warna |
-| `04-viewport-clamp.js` | Jaga panel tidak keluar layar | Ubah perilaku posisi panel |
-| `05-build-ui.js` | Pembuatan elemen DOM (panel, tombol, tooltip) | Ubah struktur/tampilan UI |
+| `03-utilities.js` | Konversi warna (hex/rgb/hsl), pencocokan nama warna, clipboard, notifikasi header | Perbaiki logika warna |
+| `05-build-ui.js` | Pembuatan elemen DOM (sidebar, tombol, tooltip) | Ubah struktur/tampilan UI |
 | `06-event-listeners.js` | Pemasangan semua event listener | Ubah shortcut/interaksi |
 | `07-mouse-detection.js` | Hover highlight + klik untuk deteksi warna | Ubah cara deteksi |
-| `08-drag-panel.js` | Drag panel + boundary clamp | Ubah perilaku drag |
 | `09-render.js` | Render list database, history, palette | Tambah/ubah palette & list |
 | `10-fetch-colors.js` | Fetch database warna (`GM_xmlhttpRequest`) | Ubah error handling fetch |
 | `11-init.js` | Inisialisasi (`buildUI()` + `fetchColors()`) | Ubah urutan start |
