@@ -1,6 +1,4 @@
-    /* ═══════════════════════════════════════════
-       CLAMP — keeps panel inside viewport
-    ═══════════════════════════════════════════ */
+    /* ===== CLAMP — keeps panel inside viewport ===== */
     function clampPanel(panel) {
         const rect = panel.getBoundingClientRect();
         const vw = window.innerWidth;

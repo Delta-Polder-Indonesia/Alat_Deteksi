@@ -49,7 +49,7 @@ function build() {
     for (const file of ORDER) {
         const p = path.join(SRC_DIR, file);
         if (!fs.existsSync(p)) {
-            console.error(`❌ File hilang: src/${file}`);
+            console.error(`Error: file hilang: src/${file}`);
             process.exit(1);
         }
         buffers.push(fs.readFileSync(p));
@@ -60,7 +60,7 @@ function build() {
     // Validasi sederhana: header userscript & penutup IIFE harus ada
     const text = output.toString('utf8');
     if (!text.includes('==/UserScript==')) {
-        console.error('❌ Hasil build tidak punya header ==UserScript== — cek src/meta.js');
+        console.error('Error: hasil build tidak punya header ==UserScript== — cek src/meta.js');
         process.exit(1);
     }
 
@@ -71,14 +71,14 @@ function build() {
     try {
         execFileSync(process.execPath, ['--check', OUT_FILE], { stdio: 'pipe' });
     } catch (err) {
-        console.error('❌ Hasil build gagal syntax check:');
+        console.error('Error: hasil build gagal syntax check:');
         console.error(err.stderr ? err.stderr.toString() : String(err));
         process.exit(1);
     }
 
     const sizeKB = (output.length / 1024).toFixed(1);
     const version = (text.match(/@version\s+(\S+)/) || [])[1] || '?';
-    console.log(`✅ dist/ColorDetektor.user.js  v${version}  (${sizeKB} KB) — ${ORDER.length} bagian digabung`);
+    console.log(`Build OK: dist/ColorDetektor.user.js  v${version}  (${sizeKB} KB) — ${ORDER.length} bagian digabung`);
 }
 
 build();
@@ -89,9 +89,9 @@ if (process.argv.includes('--watch')) {
         if (!filename || !filename.endsWith('.js')) return;
         clearTimeout(timer);
         timer = setTimeout(() => {
-            console.log(`↻ perubahan terdeteksi: ${filename}`);
+            console.log(`Perubahan terdeteksi: ${filename}`);
             build();
         }, 100);
     });
-    console.log('👀 watch mode aktif — edit file di src/, dist akan rebuild otomatis');
+    console.log('Watch mode aktif — edit file di src/, dist akan rebuild otomatis');
 }
