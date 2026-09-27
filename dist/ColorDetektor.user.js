@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/Delta-Polder-Indonesia/Alat_Deteksi
-// @version      3.1.0
+// @version      3.1.1
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
 // @match        *://*/*
+// @noframes
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @grant        GM_setValue
@@ -21,6 +22,16 @@
 
 (function () {
     'use strict';
+
+    // Cegah script berjalan di dalam iframe / sub-frame (hanya aktif di window utama / top-level)
+    try {
+        if (window.top !== window.self) {
+            return;
+        }
+    } catch (_err) {
+        // Jika akses ke window.top diblokir (cross-origin / sandboxed iframe), batalkan eksekusi
+        return;
+    }
 
     /* ===== CONFIG ===== */
     const REPOSITORY_RAW_BASE_URL = 'https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main';
@@ -173,7 +184,8 @@
             display: flex;
             flex-direction: row;
             overflow: hidden;
-            transition: width 0.22s ease, box-shadow 0.22s ease;
+            will-change: width, box-shadow;
+            transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
             backdrop-filter: none;
         }
         #cdp-panel.cdp-hidden {
@@ -193,6 +205,7 @@
         #cdp-sidebar-content {
             width: var(--cdp-sidebar-width);
             min-width: var(--cdp-sidebar-width);
+            flex-shrink: 0;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -200,13 +213,14 @@
             background: var(--cdp-bg-dark);
             opacity: 1;
             visibility: visible;
-            transition: opacity 0.14s ease, visibility 0s linear 0s;
+            transform: translateZ(0);
+            transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         }
         #cdp-panel.cdp-hidden #cdp-sidebar-content {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transition: opacity 0.1s ease, visibility 0s linear 0.22s;
+            transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.28s;
         }
 
         /* ----- NAVIGATION RAIL ----- */
@@ -261,7 +275,7 @@
             border-color: var(--cdp-border);
         }
         .cdp-rail-toggle svg {
-            transition: transform 0.22s ease;
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         }
         #cdp-panel.cdp-hidden .cdp-rail-toggle svg {
             transform: rotate(180deg);
@@ -1237,7 +1251,10 @@
         @media (prefers-reduced-motion: reduce) {
             #cdp-panel,
             #cdp-panel.cdp-hidden,
-            #cdp-toggle-btn {
+            #cdp-sidebar-content,
+            #cdp-panel.cdp-hidden #cdp-sidebar-content,
+            #cdp-toggle-btn,
+            .cdp-rail-toggle svg {
                 transition: none;
             }
         }
@@ -2680,6 +2697,11 @@
     }
 
     function buildUI() {
+        // Cegah duplikasi panel jika buildUI dipanggil lebih dari sekali di dokumen yang sama
+        if (document.getElementById('cdp-panel') || document.getElementById('cdp-sidebar-rail')) {
+            return;
+        }
+
         // Cursor Tooltip
         const tooltip = document.createElement('div');
         tooltip.id = 'cdp-cursor-tooltip';
@@ -2743,7 +2765,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v3.1.0</span>
+                    <span id="cdp-version">v3.1.1</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>

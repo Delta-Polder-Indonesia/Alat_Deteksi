@@ -154,3 +154,49 @@ test('setPanelSide moves the sidebar between screen edges', () => {
     assert.equal(ui.storedValues.cdp_sidebar_side, 'right');
     assert.deepEqual(ui.notifications[1], { message: 'Sidebar: Right', type: 'info' });
 });
+
+test('metadata includes @noframes directive to restrict userscript execution to top-level pages', () => {
+    const metaSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'meta.js'), 'utf8');
+    assert.match(metaSource, /^\/\/\s*@noframes\b/m);
+});
+
+test('buildUI guards against duplicate panels and multiple injections on the same page', () => {
+    const buildSource = fs.readFileSync(path.join(__dirname, '..', 'src', '05-build-ui.js'), 'utf8');
+    assert.match(buildSource, /document\.getElementById\(['"]cdp-panel['"]\)/);
+    assert.match(buildSource, /document\.getElementById\(['"]cdp-sidebar-rail['"]\)/);
+});
+
+test('header includes top-level window guard to prevent execution inside iframes', () => {
+    const headerSource = fs.readFileSync(path.join(__dirname, '..', 'src', '00-header.js'), 'utf8');
+    assert.match(headerSource, /window\.top\s*!==\s*window\.self/);
+
+    // Test in VM sandbox simulating an iframe where window.top !== window.self
+    const iframeWindow = {};
+    const topWindow = {};
+    const sandbox = {
+        window: iframeWindow,
+        executedPastGuard: false,
+    };
+    sandbox.window.self = iframeWindow;
+    sandbox.window.top = topWindow;
+
+    vm.runInNewContext(`${headerSource}\nexecutedPastGuard = true;\n})();`, sandbox);
+    assert.equal(sandbox.executedPastGuard, false);
+
+    // Test in top window where window.top === window.self
+    const topSandbox = {
+        window: topWindow,
+        executedPastGuard: false,
+    };
+    topSandbox.window.self = topWindow;
+    topSandbox.window.top = topWindow;
+
+    vm.runInNewContext(`${headerSource}\nexecutedPastGuard = true;\n})();`, topSandbox);
+    assert.equal(topSandbox.executedPastGuard, true);
+});
+
+test('sidebar styles apply smooth easing transitions without abrupt opacity drops', () => {
+    const styleSource = fs.readFileSync(path.join(__dirname, '..', 'src', '02-styles.js'), 'utf8');
+    assert.match(styleSource, /transition:\s*width\s+0\.28s\s+cubic-bezier\(0\.16,\s*1,\s*0\.3,\s*1\)/);
+    assert.match(styleSource, /#cdp-sidebar-content\s*\{[^}]*transform:\s*translateZ\(0\);/);
+});

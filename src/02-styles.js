@@ -42,7 +42,8 @@
             display: flex;
             flex-direction: row;
             overflow: hidden;
-            transition: width 0.22s ease, box-shadow 0.22s ease;
+            will-change: width, box-shadow;
+            transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
             backdrop-filter: none;
         }
         #cdp-panel.cdp-hidden {
@@ -62,6 +63,7 @@
         #cdp-sidebar-content {
             width: var(--cdp-sidebar-width);
             min-width: var(--cdp-sidebar-width);
+            flex-shrink: 0;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -69,13 +71,14 @@
             background: var(--cdp-bg-dark);
             opacity: 1;
             visibility: visible;
-            transition: opacity 0.14s ease, visibility 0s linear 0s;
+            transform: translateZ(0);
+            transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         }
         #cdp-panel.cdp-hidden #cdp-sidebar-content {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transition: opacity 0.1s ease, visibility 0s linear 0.22s;
+            transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.28s;
         }
 
         /* ----- NAVIGATION RAIL ----- */
@@ -130,7 +133,7 @@
             border-color: var(--cdp-border);
         }
         .cdp-rail-toggle svg {
-            transition: transform 0.22s ease;
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         }
         #cdp-panel.cdp-hidden .cdp-rail-toggle svg {
             transform: rotate(180deg);
@@ -1106,7 +1109,10 @@
         @media (prefers-reduced-motion: reduce) {
             #cdp-panel,
             #cdp-panel.cdp-hidden,
-            #cdp-toggle-btn {
+            #cdp-sidebar-content,
+            #cdp-panel.cdp-hidden #cdp-sidebar-content,
+            #cdp-toggle-btn,
+            .cdp-rail-toggle svg {
                 transition: none;
             }
         }
