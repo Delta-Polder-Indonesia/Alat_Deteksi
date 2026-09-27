@@ -1,5 +1,6 @@
     /* ===== CONFIG ===== */
-    const API_URL = 'https://api.npoint.io/a54d755ded5ab6c0e7d1';
+    const REPOSITORY_RAW_BASE_URL = 'https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main';
+    const COLOR_DATABASE_URL = REPOSITORY_RAW_BASE_URL + '/public/data/colors.json';
     const LOG_PREFIX = '[Color Detector Pro]';
     const DETECTION_MODE_EYEDROPPER = 'eyedropper';
     const DETECTION_MODE_COMPUTED = 'computed';

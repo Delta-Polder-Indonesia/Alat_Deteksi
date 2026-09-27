@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
-// @namespace    https://github.com/JD-YH03D/release
-// @version      2.8.1
+// @namespace    https://github.com/Delta-Polder-Indonesia/Alat_Deteksi
+// @version      2.9.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -11,10 +11,10 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_download
-// @connect      api.npoint.io
+// @connect      raw.githubusercontent.com
 // @connect      *
 // @run-at       document-idle
-// @icon         https://raw.githubusercontent.com/JD-YH03D/BintangToba/main/icon.svg
+// @icon         https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/assets/images/profile.svg
 // @updateURL    https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/dist/ColorDetektor.user.js
 // @downloadURL  https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/dist/ColorDetektor.user.js
 // ==/UserScript==
@@ -23,7 +23,8 @@
     'use strict';
 
     /* ===== CONFIG ===== */
-    const API_URL = 'https://api.npoint.io/a54d755ded5ab6c0e7d1';
+    const REPOSITORY_RAW_BASE_URL = 'https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main';
+    const COLOR_DATABASE_URL = REPOSITORY_RAW_BASE_URL + '/public/data/colors.json';
     const LOG_PREFIX = '[Color Detector Pro]';
     const DETECTION_MODE_EYEDROPPER = 'eyedropper';
     const DETECTION_MODE_COMPUTED = 'computed';
@@ -2532,7 +2533,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.8.1</span>
+                    <span id="cdp-version">v2.9.0</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
@@ -3891,7 +3892,7 @@
         try {
             GM_xmlhttpRequest({
                 method: 'GET',
-                url: API_URL,
+                url: COLOR_DATABASE_URL,
                 timeout: FETCH_TIMEOUT_MS,
                 onload(response) {
                     try {
@@ -3909,12 +3910,12 @@
                 },
                 onerror(response) {
                     handleColorRequestFailure('Connection error',
-                        { url: API_URL, status: response && response.status },
+                        { url: COLOR_DATABASE_URL, status: response && response.status },
                         isBackgroundRefresh);
                 },
                 ontimeout() {
                     handleColorRequestFailure('Connection timed out',
-                        { url: API_URL, timeoutMs: FETCH_TIMEOUT_MS },
+                        { url: COLOR_DATABASE_URL, timeoutMs: FETCH_TIMEOUT_MS },
                         isBackgroundRefresh);
                 }
             });

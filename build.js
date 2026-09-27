@@ -30,7 +30,7 @@ const OUT_FILE = path.join(DIST_DIR, 'ColorDetektor.user.js');
 const ORDER = [
     'meta.js',            // header ==UserScript== (nama, versi, match, grant, dll.)
     '00-header.js',       // pembuka IIFE + 'use strict'
-    '01-config.js',       // konstanta & state global (API_URL, flags)
+    '01-config.js',       // konstanta & state global (URL aset, flags)
     '02-styles.js',       // semua CSS via GM_addStyle
     '03-utilities.js',    // konversi warna, pencocokan warna, clipboard, notifikasi
     '05-build-ui.js',     // pembuatan elemen DOM panel/tombol/tooltip
