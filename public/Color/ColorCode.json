@@ -1,0 +1,2982 @@
+[
+  {
+    "Code": "#000000",
+    "Color names": "Black (W3C)"
+  },
+  {
+    "Code": "#0D031B",
+    "Color names": "Purple Obsidian"
+  },
+  {
+    "Code": "#040720",
+    "Color names": "Black Blue"
+  },
+  {
+    "Code": "#0C090A",
+    "Color names": "Night"
+  },
+  {
+    "Code": "#1C1C1C",
+    "Color names": "Obsidian"
+  },
+  {
+    "Code": "#282224",
+    "Color names": "Dark Plum"
+  },
+  {
+    "Code": "#34282C",
+    "Color names": "Charcoal"
+  },
+  {
+    "Code": "#3B3131",
+    "Color names": "Oil"
+  },
+  {
+    "Code": "#343434",
+    "Color names": "Jet Black"
+  },
+  {
+    "Code": "#3A3B3C",
+    "Color names": "Stormy Gray"
+  },
+  {
+    "Code": "#3C4142",
+    "Color names": "Charcoal Gray"
+  },
+  {
+    "Code": "#454545",
+    "Color names": "Light Black"
+  },
+  {
+    "Code": "#4D4D4F",
+    "Color names": "Dark Steampunk"
+  },
+  {
+    "Code": "#413839",
+    "Color names": "Black Cat"
+  },
+  {
+    "Code": "#3D3C3A",
+    "Color names": "Iridium"
+  },
+  {
+    "Code": "#463E3F",
+    "Color names": "Black Eel"
+  },
+  {
+    "Code": "#4C4646",
+    "Color names": "Black Cow"
+  },
+  {
+    "Code": "#504A4B",
+    "Color names": "Gray Wolf"
+  },
+  {
+    "Code": "#565051",
+    "Color names": "Vampire Gray"
+  },
+  {
+    "Code": "#52595D",
+    "Color names": "Iron Gray"
+  },
+  {
+    "Code": "#5C5858",
+    "Color names": "Gray Dolphin"
+  },
+  {
+    "Code": "#625D5D",
+    "Color names": "Carbon Gray"
+  },
+  {
+    "Code": "#666362",
+    "Color names": "Ash Gray"
+  },
+  {
+    "Code": "#696969",
+    "Color names": "DimGray or DimGrey (W3C)"
+  },
+  {
+    "Code": "#686A6C",
+    "Color names": "Nardo Gray"
+  },
+  {
+    "Code": "#6D6968",
+    "Color names": "Cloudy Gray"
+  },
+  {
+    "Code": "#726E6D",
+    "Color names": "Smokey Gray"
+  },
+  {
+    "Code": "#736F6E",
+    "Color names": "Alien Gray"
+  },
+  {
+    "Code": "#757575",
+    "Color names": "Sonic Silver"
+  },
+  {
+    "Code": "#797979",
+    "Color names": "Platinum Gray"
+  },
+  {
+    "Code": "#837E7C",
+    "Color names": "Granite"
+  },
+  {
+    "Code": "#808080",
+    "Color names": "Gray or Grey (W3C)"
+  },
+  {
+    "Code": "#848482",
+    "Color names": "Battleship Gray"
+  },
+  {
+    "Code": "#888B90",
+    "Color names": "Sheet Metal"
+  },
+  {
+    "Code": "#8C8C8C",
+    "Color names": "Dark Gainsboro"
+  },
+  {
+    "Code": "#8D918D",
+    "Color names": "Gunmetal Gray"
+  },
+  {
+    "Code": "#9B9A96",
+    "Color names": "Cold Metal"
+  },
+  {
+    "Code": "#99A3A3",
+    "Color names": "Stainless Steel Gray"
+  },
+  {
+    "Code": "#A9A9A9",
+    "Color names": "DarkGray or DarkGrey (W3C)"
+  },
+  {
+    "Code": "#A8A9AD",
+    "Color names": "Chrome Aluminum"
+  },
+  {
+    "Code": "#B6B6B4",
+    "Color names": "Gray Cloud"
+  },
+  {
+    "Code": "#B6B6B6",
+    "Color names": "Metal"
+  },
+  {
+    "Code": "#C0C0C0",
+    "Color names": "Silver (W3C)"
+  },
+  {
+    "Code": "#C9C1C1",
+    "Color names": "Steampunk"
+  },
+  {
+    "Code": "#C9C0BB",
+    "Color names": "Pale Silver"
+  },
+  {
+    "Code": "#C0C6C7",
+    "Color names": "Gear Steel Gray"
+  },
+  {
+    "Code": "#D1D0CE",
+    "Color names": "Gray Goose"
+  },
+  {
+    "Code": "#CECECE",
+    "Color names": "Platinum Silver"
+  },
+  {
+    "Code": "#D3D3D3",
+    "Color names": "LightGray or LightGrey (W3C)"
+  },
+  {
+    "Code": "#DADBDD",
+    "Color names": "Silver White"
+  },
+  {
+    "Code": "#DCDCDC",
+    "Color names": "Gainsboro (W3C)"
+  },
+  {
+    "Code": "#E0E5E5",
+    "Color names": "Light Steel Gray"
+  },
+  {
+    "Code": "#F5F5F5",
+    "Color names": "WhiteSmoke (W3C)"
+  },
+  {
+    "Code": "#EEEEEE",
+    "Color names": "White Gray"
+  },
+  {
+    "Code": "#E5E4E2",
+    "Color names": "Platinum"
+  },
+  {
+    "Code": "#BCC6CC",
+    "Color names": "Metallic Silver"
+  },
+  {
+    "Code": "#98AFC7",
+    "Color names": "Blue Gray"
+  },
+  {
+    "Code": "#838996",
+    "Color names": "Roman Silver"
+  },
+  {
+    "Code": "#778899",
+    "Color names": "LightSlateGray or LightSlateGrey (W3C)"
+  },
+  {
+    "Code": "#708090",
+    "Color names": "SlateGray or SlateGrey (W3C)"
+  },
+  {
+    "Code": "#6D7B8D",
+    "Color names": "Rat Gray"
+  },
+  {
+    "Code": "#657383",
+    "Color names": "Slate Granite Gray"
+  },
+  {
+    "Code": "#616D7E",
+    "Color names": "Jet Gray"
+  },
+  {
+    "Code": "#646D7E",
+    "Color names": "Mist Blue"
+  },
+  {
+    "Code": "#6E7F80",
+    "Color names": "Dusty Blue"
+  },
+  {
+    "Code": "#71797E",
+    "Color names": "Steel Gray"
+  },
+  {
+    "Code": "#566D7E",
+    "Color names": "Marble Blue"
+  },
+  {
+    "Code": "#737CA1",
+    "Color names": "Slate Blue Gray"
+  },
+  {
+    "Code": "#728FCE",
+    "Color names": "Light Purple Blue"
+  },
+  {
+    "Code": "#4863A0",
+    "Color names": "Azure Blue"
+  },
+  {
+    "Code": "#3D5791",
+    "Color names": "Monte Carlo Blue"
+  },
+  {
+    "Code": "#2F539B",
+    "Color names": "Estoril Blue"
+  },
+  {
+    "Code": "#2E5090",
+    "Color names": "YInMn Blue"
+  },
+  {
+    "Code": "#2B547E",
+    "Color names": "Blue Jay"
+  },
+  {
+    "Code": "#36454F",
+    "Color names": "Charcoal Blue"
+  },
+  {
+    "Code": "#29465B",
+    "Color names": "Dark Blue Gray"
+  },
+  {
+    "Code": "#2B3856",
+    "Color names": "Dark Slate"
+  },
+  {
+    "Code": "#123456",
+    "Color names": "Deep Sea Blue"
+  },
+  {
+    "Code": "#003366",
+    "Color names": "Midnight Navy"
+  },
+  {
+    "Code": "#151B54",
+    "Color names": "Night Blue"
+  },
+  {
+    "Code": "#191970",
+    "Color names": "MidnightBlue (W3C)"
+  },
+  {
+    "Code": "#000080",
+    "Color names": "Navy (W3C)"
+  },
+  {
+    "Code": "#151B8D",
+    "Color names": "Denim Dark Blue"
+  },
+  {
+    "Code": "#00008B",
+    "Color names": "DarkBlue (W3C)"
+  },
+  {
+    "Code": "#15317E",
+    "Color names": "Lapis Blue"
+  },
+  {
+    "Code": "#0000A0",
+    "Color names": "New Midnight Blue"
+  },
+  {
+    "Code": "#0000A5",
+    "Color names": "Earth Blue"
+  },
+  {
+    "Code": "#0020C2",
+    "Color names": "Cobalt Blue"
+  },
+  {
+    "Code": "#0000CD",
+    "Color names": "MediumBlue (W3C)"
+  },
+  {
+    "Code": "#0041C2",
+    "Color names": "Blueberry Blue"
+  },
+  {
+    "Code": "#2916F5",
+    "Color names": "Canary Blue"
+  },
+  {
+    "Code": "#0000FF",
+    "Color names": "Blue (W3C)"
+  },
+  {
+    "Code": "#0002FF",
+    "Color names": "Samco Blue"
+  },
+  {
+    "Code": "#0909FF",
+    "Color names": "Bright Blue"
+  },
+  {
+    "Code": "#1F45FC",
+    "Color names": "Blue Orchid"
+  },
+  {
+    "Code": "#2554C7",
+    "Color names": "Sapphire Blue"
+  },
+  {
+    "Code": "#1569C7",
+    "Color names": "Blue Eyes"
+  },
+  {
+    "Code": "#1974D2",
+    "Color names": "Bright Navy Blue"
+  },
+  {
+    "Code": "#2B60DE",
+    "Color names": "Balloon Blue"
+  },
+  {
+    "Code": "#4169E1",
+    "Color names": "RoyalBlue (W3C)"
+  },
+  {
+    "Code": "#2B65EC",
+    "Color names": "Ocean Blue"
+  },
+  {
+    "Code": "#0059FF",
+    "Color names": "Dark Sky Blue"
+  },
+  {
+    "Code": "#306EFF",
+    "Color names": "Blue Ribbon"
+  },
+  {
+    "Code": "#157DEC",
+    "Color names": "Blue Dress"
+  },
+  {
+    "Code": "#1589FF",
+    "Color names": "Neon Blue"
+  },
+  {
+    "Code": "#1E90FF",
+    "Color names": "DodgerBlue (W3C)"
+  },
+  {
+    "Code": "#0E87CC",
+    "Color names": "Water Blue"
+  },
+  {
+    "Code": "#368BC1",
+    "Color names": "Glacial Blue Ice"
+  },
+  {
+    "Code": "#4682B4",
+    "Color names": "SteelBlue (W3C)"
+  },
+  {
+    "Code": "#488AC7",
+    "Color names": "Silk Blue"
+  },
+  {
+    "Code": "#357EC7",
+    "Color names": "Windows Blue"
+  },
+  {
+    "Code": "#3090C7",
+    "Color names": "Blue Ivy"
+  },
+  {
+    "Code": "#14A3C7",
+    "Color names": "Cyan Blue"
+  },
+  {
+    "Code": "#659EC7",
+    "Color names": "Blue Koi"
+  },
+  {
+    "Code": "#87AFC7",
+    "Color names": "Columbia Blue"
+  },
+  {
+    "Code": "#95B9C7",
+    "Color names": "Baby Blue"
+  },
+  {
+    "Code": "#6495ED",
+    "Color names": "CornflowerBlue (W3C)"
+  },
+  {
+    "Code": "#6698FF",
+    "Color names": "Sky Blue Dress"
+  },
+  {
+    "Code": "#56A5EC",
+    "Color names": "Iceberg"
+  },
+  {
+    "Code": "#38ACEC",
+    "Color names": "Butterfly Blue"
+  },
+  {
+    "Code": "#00BFFF",
+    "Color names": "DeepSkyBlue (W3C)"
+  },
+  {
+    "Code": "#3BB9FF",
+    "Color names": "Midday Blue"
+  },
+  {
+    "Code": "#5CB3FF",
+    "Color names": "Crystal Blue"
+  },
+  {
+    "Code": "#79BAEC",
+    "Color names": "Denim Blue"
+  },
+  {
+    "Code": "#82CAFF",
+    "Color names": "Day Sky Blue"
+  },
+  {
+    "Code": "#87CEFA",
+    "Color names": "LightSkyBlue (W3C)"
+  },
+  {
+    "Code": "#87CEEB",
+    "Color names": "SkyBlue (W3C)"
+  },
+  {
+    "Code": "#A0CFEC",
+    "Color names": "Jeans Blue"
+  },
+  {
+    "Code": "#B7CEEC",
+    "Color names": "Blue Angel"
+  },
+  {
+    "Code": "#B4CFEC",
+    "Color names": "Pastel Blue"
+  },
+  {
+    "Code": "#ADDFFF",
+    "Color names": "Light Day Blue"
+  },
+  {
+    "Code": "#C2DFFF",
+    "Color names": "Sea Blue"
+  },
+  {
+    "Code": "#C6DEFF",
+    "Color names": "Heavenly Blue"
+  },
+  {
+    "Code": "#BDEDFF",
+    "Color names": "Robin Egg Blue"
+  },
+  {
+    "Code": "#B0E0E6",
+    "Color names": "PowderBlue (W3C)"
+  },
+  {
+    "Code": "#AFDCEC",
+    "Color names": "Coral Blue"
+  },
+  {
+    "Code": "#ADD8E6",
+    "Color names": "LightBlue (W3C)"
+  },
+  {
+    "Code": "#B0CFDE",
+    "Color names": "LightSteelBlue (W3C)"
+  },
+  {
+    "Code": "#C9DFEC",
+    "Color names": "Gulf Blue"
+  },
+  {
+    "Code": "#D5D6EA",
+    "Color names": "Pastel Light Blue"
+  },
+  {
+    "Code": "#E3E4FA",
+    "Color names": "Lavender Blue"
+  },
+  {
+    "Code": "#DBE9FA",
+    "Color names": "White Blue"
+  },
+  {
+    "Code": "#E6E6FA",
+    "Color names": "Lavender (W3C)"
+  },
+  {
+    "Code": "#EBF4FA",
+    "Color names": "Water"
+  },
+  {
+    "Code": "#F0F8FF",
+    "Color names": "AliceBlue (W3C)"
+  },
+  {
+    "Code": "#F8F8FF",
+    "Color names": "GhostWhite (W3C)"
+  },
+  {
+    "Code": "#F0FFFF",
+    "Color names": "Azure (W3C)"
+  },
+  {
+    "Code": "#E0FFFF",
+    "Color names": "LightCyan (W3C)"
+  },
+  {
+    "Code": "#CCFFFF",
+    "Color names": "Light Slate"
+  },
+  {
+    "Code": "#9AFEFF",
+    "Color names": "Electric Blue"
+  },
+  {
+    "Code": "#7DFDFE",
+    "Color names": "Tron Blue"
+  },
+  {
+    "Code": "#57FEFF",
+    "Color names": "Blue Zircon"
+  },
+  {
+    "Code": "#00FFFF",
+    "Color names": "Cyan or Aqua (W3C)"
+  },
+  {
+    "Code": "#0AFFFF",
+    "Color names": "Bright Cyan"
+  },
+  {
+    "Code": "#4BF0FC",
+    "Color names": "Neon Cyan"
+  },
+  {
+    "Code": "#50EBEC",
+    "Color names": "Celeste"
+  },
+  {
+    "Code": "#4EE2EC",
+    "Color names": "Blue Diamond"
+  },
+  {
+    "Code": "#16E2F5",
+    "Color names": "Bright Turquoise"
+  },
+  {
+    "Code": "#8EEBEC",
+    "Color names": "Blue Lagoon"
+  },
+  {
+    "Code": "#AFEEEE",
+    "Color names": "PaleTurquoise (W3C)"
+  },
+  {
+    "Code": "#CFECEC",
+    "Color names": "Pale Blue Lily"
+  },
+  {
+    "Code": "#B3D9D9",
+    "Color names": "Light Teal"
+  },
+  {
+    "Code": "#81D8D0",
+    "Color names": "Tiffany Blue"
+  },
+  {
+    "Code": "#77BFC7",
+    "Color names": "Blue Hosta"
+  },
+  {
+    "Code": "#92C7C7",
+    "Color names": "Cyan Opaque"
+  },
+  {
+    "Code": "#78C7C7",
+    "Color names": "Northern Lights Blue"
+  },
+  {
+    "Code": "#7BCCB5",
+    "Color names": "Blue Green"
+  },
+  {
+    "Code": "#66CDAA",
+    "Color names": "MediumAquaMarine (W3C)"
+  },
+  {
+    "Code": "#93E9BE",
+    "Color names": "Aqua Seafoam Green"
+  },
+  {
+    "Code": "#AAF0D1",
+    "Color names": "Magic Mint"
+  },
+  {
+    "Code": "#93FFE8",
+    "Color names": "Light Aquamarine"
+  },
+  {
+    "Code": "#7FFFD4",
+    "Color names": "Aquamarine (W3C)"
+  },
+  {
+    "Code": "#01F9C6",
+    "Color names": "Bright Teal"
+  },
+  {
+    "Code": "#40E0D0",
+    "Color names": "Turquoise (W3C)"
+  },
+  {
+    "Code": "#48D1CC",
+    "Color names": "MediumTurquoise (W3C)"
+  },
+  {
+    "Code": "#48CCCD",
+    "Color names": "Deep Turquoise"
+  },
+  {
+    "Code": "#46C7C7",
+    "Color names": "Jellyfish"
+  },
+  {
+    "Code": "#43C6DB",
+    "Color names": "Blue Turquoise"
+  },
+  {
+    "Code": "#00CED1",
+    "Color names": "DarkTurquoise (W3C)"
+  },
+  {
+    "Code": "#43BFC7",
+    "Color names": "Macaw Blue Green"
+  },
+  {
+    "Code": "#20B2AA",
+    "Color names": "LightSeaGreen (W3C)"
+  },
+  {
+    "Code": "#3EA99F",
+    "Color names": "Seafoam Green"
+  },
+  {
+    "Code": "#5F9EA0",
+    "Color names": "CadetBlue (W3C)"
+  },
+  {
+    "Code": "#3B9C9C",
+    "Color names": "Deep Sea"
+  },
+  {
+    "Code": "#008B8B",
+    "Color names": "DarkCyan (W3C)"
+  },
+  {
+    "Code": "#00827F",
+    "Color names": "Teal Green"
+  },
+  {
+    "Code": "#008080",
+    "Color names": "Teal (W3C)"
+  },
+  {
+    "Code": "#007C80",
+    "Color names": "Teal Blue"
+  },
+  {
+    "Code": "#045F5F",
+    "Color names": "Medium Teal"
+  },
+  {
+    "Code": "#045D5D",
+    "Color names": "Dark Teal"
+  },
+  {
+    "Code": "#033E3E",
+    "Color names": "Deep Teal"
+  },
+  {
+    "Code": "#25383C",
+    "Color names": "DarkSlateGray or DarkSlateGrey (W3C)"
+  },
+  {
+    "Code": "#2C3539",
+    "Color names": "Gunmetal"
+  },
+  {
+    "Code": "#3C565B",
+    "Color names": "Blue Moss Green"
+  },
+  {
+    "Code": "#4C787E",
+    "Color names": "Beetle Green"
+  },
+  {
+    "Code": "#5E7D7E",
+    "Color names": "Grayish Turquoise"
+  },
+  {
+    "Code": "#307D7E",
+    "Color names": "Greenish Blue"
+  },
+  {
+    "Code": "#348781",
+    "Color names": "Aquamarine Stone"
+  },
+  {
+    "Code": "#438D80",
+    "Color names": "Sea Turtle Green"
+  },
+  {
+    "Code": "#4E8975",
+    "Color names": "Dull Sea Green"
+  },
+  {
+    "Code": "#1F6357",
+    "Color names": "Dark Green Blue"
+  },
+  {
+    "Code": "#1B5448",
+    "Color names": "Alpine Green"
+  },
+  {
+    "Code": "#306754",
+    "Color names": "Deep Sea Green"
+  },
+  {
+    "Code": "#006A4E",
+    "Color names": "Bottle Green"
+  },
+  {
+    "Code": "#2E8B57",
+    "Color names": "SeaGreen (W3C)"
+  },
+  {
+    "Code": "#1B8A6B",
+    "Color names": "Elf Green"
+  },
+  {
+    "Code": "#31906E",
+    "Color names": "Dark Mint"
+  },
+  {
+    "Code": "#00A36C",
+    "Color names": "Jade"
+  },
+  {
+    "Code": "#34A56F",
+    "Color names": "Earth Green"
+  },
+  {
+    "Code": "#1AA260",
+    "Color names": "Chrome Green"
+  },
+  {
+    "Code": "#3EB489",
+    "Color names": "Mint"
+  },
+  {
+    "Code": "#50C878",
+    "Color names": "Emerald"
+  },
+  {
+    "Code": "#22CE83",
+    "Color names": "Isle Of Man Green"
+  },
+  {
+    "Code": "#3CB371",
+    "Color names": "MediumSeaGreen (W3C)"
+  },
+  {
+    "Code": "#7C9D8E",
+    "Color names": "Metallic Green"
+  },
+  {
+    "Code": "#78866B",
+    "Color names": "Camouflage Green"
+  },
+  {
+    "Code": "#848B79",
+    "Color names": "Sage Green"
+  },
+  {
+    "Code": "#617C58",
+    "Color names": "Hazel Green"
+  },
+  {
+    "Code": "#728C00",
+    "Color names": "Venom Green"
+  },
+  {
+    "Code": "#6B8E23",
+    "Color names": "OliveDrab (W3C)"
+  },
+  {
+    "Code": "#808000",
+    "Color names": "Olive (W3C)"
+  },
+  {
+    "Code": "#555D50",
+    "Color names": "Ebony"
+  },
+  {
+    "Code": "#556B2F",
+    "Color names": "DarkOliveGreen (W3C)"
+  },
+  {
+    "Code": "#4E5B31",
+    "Color names": "Military Green"
+  },
+  {
+    "Code": "#3A5F0B",
+    "Color names": "Green Leaves"
+  },
+  {
+    "Code": "#4B5320",
+    "Color names": "Army Green"
+  },
+  {
+    "Code": "#667C26",
+    "Color names": "Fern Green"
+  },
+  {
+    "Code": "#4E9258",
+    "Color names": "Fall Forest Green"
+  },
+  {
+    "Code": "#08A04B",
+    "Color names": "Irish Green"
+  },
+  {
+    "Code": "#387C44",
+    "Color names": "Pine Green"
+  },
+  {
+    "Code": "#347235",
+    "Color names": "Medium Forest Green"
+  },
+  {
+    "Code": "#27742C",
+    "Color names": "Racing Green"
+  },
+  {
+    "Code": "#347C2C",
+    "Color names": "Jungle Green"
+  },
+  {
+    "Code": "#227442",
+    "Color names": "Cactus Green"
+  },
+  {
+    "Code": "#228B22",
+    "Color names": "ForestGreen (W3C)"
+  },
+  {
+    "Code": "#008000",
+    "Color names": "Green (W3C)"
+  },
+  {
+    "Code": "#006400",
+    "Color names": "DarkGreen (W3C)"
+  },
+  {
+    "Code": "#056608",
+    "Color names": "Deep Green"
+  },
+  {
+    "Code": "#046307",
+    "Color names": "Deep Emerald Green"
+  },
+  {
+    "Code": "#355E3B",
+    "Color names": "Hunter Green"
+  },
+  {
+    "Code": "#254117",
+    "Color names": "Dark Forest Green"
+  },
+  {
+    "Code": "#004225",
+    "Color names": "Lotus Green"
+  },
+  {
+    "Code": "#026C3D",
+    "Color names": "Broccoli Green"
+  },
+  {
+    "Code": "#437C17",
+    "Color names": "Seaweed Green"
+  },
+  {
+    "Code": "#347C17",
+    "Color names": "Shamrock Green"
+  },
+  {
+    "Code": "#6AA121",
+    "Color names": "Green Onion"
+  },
+  {
+    "Code": "#8A9A5B",
+    "Color names": "Moss Green"
+  },
+  {
+    "Code": "#3F9B0B",
+    "Color names": "Grass Green"
+  },
+  {
+    "Code": "#4AA02C",
+    "Color names": "Green Pepper"
+  },
+  {
+    "Code": "#41A317",
+    "Color names": "Dark Lime Green"
+  },
+  {
+    "Code": "#12AD2B",
+    "Color names": "Parrot Green"
+  },
+  {
+    "Code": "#3EA055",
+    "Color names": "Clover Green"
+  },
+  {
+    "Code": "#73A16C",
+    "Color names": "Dinosaur Green"
+  },
+  {
+    "Code": "#6CBB3C",
+    "Color names": "Green Snake"
+  },
+  {
+    "Code": "#6CC417",
+    "Color names": "Alien Green"
+  },
+  {
+    "Code": "#4CC417",
+    "Color names": "Green Apple"
+  },
+  {
+    "Code": "#32CD32",
+    "Color names": "LimeGreen (W3C)"
+  },
+  {
+    "Code": "#52D017",
+    "Color names": "Pea Green"
+  },
+  {
+    "Code": "#4CC552",
+    "Color names": "Kelly Green"
+  },
+  {
+    "Code": "#54C571",
+    "Color names": "Zombie Green"
+  },
+  {
+    "Code": "#89C35C",
+    "Color names": "Green Peas"
+  },
+  {
+    "Code": "#85BB65",
+    "Color names": "Dollar Bill Green"
+  },
+  {
+    "Code": "#99C68E",
+    "Color names": "Frog Green"
+  },
+  {
+    "Code": "#A0D6B4",
+    "Color names": "Turquoise Green"
+  },
+  {
+    "Code": "#8FBC8F",
+    "Color names": "DarkSeaGreen (W3C)"
+  },
+  {
+    "Code": "#829F82",
+    "Color names": "Basil Green"
+  },
+  {
+    "Code": "#A2AD9C",
+    "Color names": "Gray Green"
+  },
+  {
+    "Code": "#B8BC86",
+    "Color names": "Light Olive Green"
+  },
+  {
+    "Code": "#9CB071",
+    "Color names": "Iguana Green"
+  },
+  {
+    "Code": "#8FB31D",
+    "Color names": "Citron Green"
+  },
+  {
+    "Code": "#B0BF1A",
+    "Color names": "Acid Green"
+  },
+  {
+    "Code": "#B2C248",
+    "Color names": "Avocado Green"
+  },
+  {
+    "Code": "#9DC209",
+    "Color names": "Pistachio Green"
+  },
+  {
+    "Code": "#A1C935",
+    "Color names": "Salad Green"
+  },
+  {
+    "Code": "#9ACD32",
+    "Color names": "YellowGreen (W3C)"
+  },
+  {
+    "Code": "#77DD77",
+    "Color names": "Pastel Green"
+  },
+  {
+    "Code": "#7FE817",
+    "Color names": "Hummingbird Green"
+  },
+  {
+    "Code": "#59E817",
+    "Color names": "Nebula Green"
+  },
+  {
+    "Code": "#57E964",
+    "Color names": "Stoplight Go Green"
+  },
+  {
+    "Code": "#16F529",
+    "Color names": "Neon Green"
+  },
+  {
+    "Code": "#5EFB6E",
+    "Color names": "Jade Green"
+  },
+  {
+    "Code": "#00FF7F",
+    "Color names": "SpringGreen (W3C)"
+  },
+  {
+    "Code": "#00FF80",
+    "Color names": "Ocean Green"
+  },
+  {
+    "Code": "#36F57F",
+    "Color names": "Lime Mint Green"
+  },
+  {
+    "Code": "#00FA9A",
+    "Color names": "MediumSpringGreen (W3C)"
+  },
+  {
+    "Code": "#12E193",
+    "Color names": "Aqua Green"
+  },
+  {
+    "Code": "#5FFB17",
+    "Color names": "Emerald Green"
+  },
+  {
+    "Code": "#00FF00",
+    "Color names": "Lime (W3C)"
+  },
+  {
+    "Code": "#7CFC00",
+    "Color names": "LawnGreen (W3C)"
+  },
+  {
+    "Code": "#66FF00",
+    "Color names": "Bright Green"
+  },
+  {
+    "Code": "#7FFF00",
+    "Color names": "Chartreuse (W3C)"
+  },
+  {
+    "Code": "#87F717",
+    "Color names": "Yellow Lawn Green"
+  },
+  {
+    "Code": "#98F516",
+    "Color names": "Aloe Vera Green"
+  },
+  {
+    "Code": "#B1FB17",
+    "Color names": "Dull Green Yellow"
+  },
+  {
+    "Code": "#ADF802",
+    "Color names": "Lemon Green"
+  },
+  {
+    "Code": "#ADFF2F",
+    "Color names": "GreenYellow (W3C)"
+  },
+  {
+    "Code": "#BDF516",
+    "Color names": "Chameleon Green"
+  },
+  {
+    "Code": "#DAEE01",
+    "Color names": "Neon Yellow Green"
+  },
+  {
+    "Code": "#E2F516",
+    "Color names": "Yellow Green Grosbeak"
+  },
+  {
+    "Code": "#CCFB5D",
+    "Color names": "Tea Green"
+  },
+  {
+    "Code": "#BCE954",
+    "Color names": "Slime Green"
+  },
+  {
+    "Code": "#64E986",
+    "Color names": "Algae Green"
+  },
+  {
+    "Code": "#90EE90",
+    "Color names": "LightGreen (W3C)"
+  },
+  {
+    "Code": "#6AFB92",
+    "Color names": "Dragon Green"
+  },
+  {
+    "Code": "#98FB98",
+    "Color names": "PaleGreen (W3C)"
+  },
+  {
+    "Code": "#98FF98",
+    "Color names": "Mint Green"
+  },
+  {
+    "Code": "#B5EAAA",
+    "Color names": "Green Thumb"
+  },
+  {
+    "Code": "#E3F9A6",
+    "Color names": "Organic Brown"
+  },
+  {
+    "Code": "#C3FDB8",
+    "Color names": "Light Jade"
+  },
+  {
+    "Code": "#C2E5D3",
+    "Color names": "Light Mint Green"
+  },
+  {
+    "Code": "#DBF9DB",
+    "Color names": "Light Rose Green"
+  },
+  {
+    "Code": "#E8F1D4",
+    "Color names": "Chrome White"
+  },
+  {
+    "Code": "#F0FFF0",
+    "Color names": "HoneyDew (W3C)"
+  },
+  {
+    "Code": "#F5FFFA",
+    "Color names": "MintCream (W3C)"
+  },
+  {
+    "Code": "#FFFACD",
+    "Color names": "LemonChiffon (W3C)"
+  },
+  {
+    "Code": "#FFFFC2",
+    "Color names": "Parchment"
+  },
+  {
+    "Code": "#FFFFCC",
+    "Color names": "Cream"
+  },
+  {
+    "Code": "#FFFDD0",
+    "Color names": "Cream White"
+  },
+  {
+    "Code": "#FAFAD2",
+    "Color names": "LightGoldenRodYellow (W3C)"
+  },
+  {
+    "Code": "#FFFFE0",
+    "Color names": "LightYellow (W3C)"
+  },
+  {
+    "Code": "#F5F5DC",
+    "Color names": "Beige (W3C)"
+  },
+  {
+    "Code": "#F2F0DF",
+    "Color names": "White Yellow"
+  },
+  {
+    "Code": "#FFF8DC",
+    "Color names": "Cornsilk (W3C)"
+  },
+  {
+    "Code": "#FBF6D9",
+    "Color names": "Blonde"
+  },
+  {
+    "Code": "#FAEBD7",
+    "Color names": "AntiqueWhite (W3C)"
+  },
+  {
+    "Code": "#FFF0DB",
+    "Color names": "Light Beige"
+  },
+  {
+    "Code": "#FFEFD5",
+    "Color names": "PapayaWhip (W3C)"
+  },
+  {
+    "Code": "#F7E7CE",
+    "Color names": "Champagne"
+  },
+  {
+    "Code": "#FFEBCD",
+    "Color names": "BlanchedAlmond (W3C)"
+  },
+  {
+    "Code": "#FFE4C4",
+    "Color names": "Bisque (W3C)"
+  },
+  {
+    "Code": "#F5DEB3",
+    "Color names": "Wheat (W3C)"
+  },
+  {
+    "Code": "#FFE4B5",
+    "Color names": "Moccasin (W3C)"
+  },
+  {
+    "Code": "#FFE5B4",
+    "Color names": "Peach"
+  },
+  {
+    "Code": "#FED8B1",
+    "Color names": "Light Orange"
+  },
+  {
+    "Code": "#FFDAB9",
+    "Color names": "PeachPuff (W3C)"
+  },
+  {
+    "Code": "#FBD5AB",
+    "Color names": "Coral Peach"
+  },
+  {
+    "Code": "#FFDEAD",
+    "Color names": "NavajoWhite (W3C)"
+  },
+  {
+    "Code": "#FBE7A1",
+    "Color names": "Golden Blonde"
+  },
+  {
+    "Code": "#F3E3C3",
+    "Color names": "Golden Silk"
+  },
+  {
+    "Code": "#F0E2B6",
+    "Color names": "Dark Blonde"
+  },
+  {
+    "Code": "#F1E5AC",
+    "Color names": "Light Gold"
+  },
+  {
+    "Code": "#F3E5AB",
+    "Color names": "Vanilla"
+  },
+  {
+    "Code": "#ECE5B6",
+    "Color names": "Tan Brown"
+  },
+  {
+    "Code": "#E8E4C9",
+    "Color names": "Dirty White"
+  },
+  {
+    "Code": "#EEE8AA",
+    "Color names": "PaleGoldenRod (W3C)"
+  },
+  {
+    "Code": "#F0E68C",
+    "Color names": "Khaki (W3C)"
+  },
+  {
+    "Code": "#EDDA74",
+    "Color names": "Cardboard Brown"
+  },
+  {
+    "Code": "#EDE275",
+    "Color names": "Harvest Gold"
+  },
+  {
+    "Code": "#FFE87C",
+    "Color names": "Sun Yellow"
+  },
+  {
+    "Code": "#FFF380",
+    "Color names": "Corn Yellow"
+  },
+  {
+    "Code": "#FAF884",
+    "Color names": "Pastel Yellow"
+  },
+  {
+    "Code": "#FFFF33",
+    "Color names": "Neon Yellow"
+  },
+  {
+    "Code": "#FFFF00",
+    "Color names": "Yellow (W3C)"
+  },
+  {
+    "Code": "#FEF250",
+    "Color names": "Lemon Yellow"
+  },
+  {
+    "Code": "#FFEF00",
+    "Color names": "Canary Yellow"
+  },
+  {
+    "Code": "#F5E216",
+    "Color names": "Banana Yellow"
+  },
+  {
+    "Code": "#FFDB58",
+    "Color names": "Mustard Yellow"
+  },
+  {
+    "Code": "#FFDF00",
+    "Color names": "Golden Yellow"
+  },
+  {
+    "Code": "#F9DB24",
+    "Color names": "Bold Yellow"
+  },
+  {
+    "Code": "#EED202",
+    "Color names": "Safety Yellow"
+  },
+  {
+    "Code": "#FFD801",
+    "Color names": "Rubber Ducky Yellow"
+  },
+  {
+    "Code": "#FFD700",
+    "Color names": "Gold (W3C)"
+  },
+  {
+    "Code": "#FDD017",
+    "Color names": "Bright Gold"
+  },
+  {
+    "Code": "#FFCE44",
+    "Color names": "Chrome Gold"
+  },
+  {
+    "Code": "#EAC117",
+    "Color names": "Golden Brown"
+  },
+  {
+    "Code": "#F6BE00",
+    "Color names": "Deep Yellow"
+  },
+  {
+    "Code": "#F2BB66",
+    "Color names": "Macaroni and Cheese"
+  },
+  {
+    "Code": "#FFBF00",
+    "Color names": "Amber"
+  },
+  {
+    "Code": "#FBB917",
+    "Color names": "Saffron"
+  },
+  {
+    "Code": "#FDBD01",
+    "Color names": "Neon Gold"
+  },
+  {
+    "Code": "#FBB117",
+    "Color names": "Beer"
+  },
+  {
+    "Code": "#FFAE42",
+    "Color names": "Yellow Orange or Orange Yellow"
+  },
+  {
+    "Code": "#FFA62F",
+    "Color names": "Cantaloupe"
+  },
+  {
+    "Code": "#FFA600",
+    "Color names": "Cheese Orange"
+  },
+  {
+    "Code": "#FFA500",
+    "Color names": "Orange (W3C)"
+  },
+  {
+    "Code": "#EE9A4D",
+    "Color names": "Brown Sand"
+  },
+  {
+    "Code": "#F4A460",
+    "Color names": "SandyBrown (W3C)"
+  },
+  {
+    "Code": "#E2A76F",
+    "Color names": "Brown Sugar"
+  },
+  {
+    "Code": "#C19A6B",
+    "Color names": "Camel Brown"
+  },
+  {
+    "Code": "#E6BF83",
+    "Color names": "Deer Brown"
+  },
+  {
+    "Code": "#DEB887",
+    "Color names": "BurlyWood (W3C)"
+  },
+  {
+    "Code": "#D2B48C",
+    "Color names": "Tan (W3C)"
+  },
+  {
+    "Code": "#C8AD7F",
+    "Color names": "Light French Beige"
+  },
+  {
+    "Code": "#C2B280",
+    "Color names": "Sand"
+  },
+  {
+    "Code": "#C6BA8B",
+    "Color names": "Soft Hazel"
+  },
+  {
+    "Code": "#BCB88A",
+    "Color names": "Sage"
+  },
+  {
+    "Code": "#C8B560",
+    "Color names": "Fall Leaf Brown"
+  },
+  {
+    "Code": "#C9BE62",
+    "Color names": "Ginger Brown"
+  },
+  {
+    "Code": "#C9AE5D",
+    "Color names": "Bronze Gold"
+  },
+  {
+    "Code": "#BDB76B",
+    "Color names": "DarkKhaki (W3C)"
+  },
+  {
+    "Code": "#BAB86C",
+    "Color names": "Olive Green"
+  },
+  {
+    "Code": "#B5A642",
+    "Color names": "Brass"
+  },
+  {
+    "Code": "#AD9535",
+    "Color names": "Austin Yellow"
+  },
+  {
+    "Code": "#C7A317",
+    "Color names": "Cookie Brown"
+  },
+  {
+    "Code": "#D4AF37",
+    "Color names": "Metallic Gold"
+  },
+  {
+    "Code": "#E1AD01",
+    "Color names": "Mustard"
+  },
+  {
+    "Code": "#E9AB17",
+    "Color names": "Bee Yellow"
+  },
+  {
+    "Code": "#EBA832",
+    "Color names": "Marigold"
+  },
+  {
+    "Code": "#E8A317",
+    "Color names": "School Bus Yellow"
+  },
+  {
+    "Code": "#DAA520",
+    "Color names": "GoldenRod (W3C)"
+  },
+  {
+    "Code": "#D4A017",
+    "Color names": "Orange Gold"
+  },
+  {
+    "Code": "#D29F51",
+    "Color names": "Champagne Gold"
+  },
+  {
+    "Code": "#C68E17",
+    "Color names": "Caramel"
+  },
+  {
+    "Code": "#B8860B",
+    "Color names": "DarkGoldenRod (W3C)"
+  },
+  {
+    "Code": "#C58917",
+    "Color names": "Cinnamon"
+  },
+  {
+    "Code": "#CD853F",
+    "Color names": "Peru (W3C)"
+  },
+  {
+    "Code": "#CD7F32",
+    "Color names": "Bronze"
+  },
+  {
+    "Code": "#CA762B",
+    "Color names": "Pumpkin Pie"
+  },
+  {
+    "Code": "#C88141",
+    "Color names": "Tiger Orange"
+  },
+  {
+    "Code": "#B87333",
+    "Color names": "Copper"
+  },
+  {
+    "Code": "#AA6C39",
+    "Color names": "Dark Gold"
+  },
+  {
+    "Code": "#A97142",
+    "Color names": "Metallic Bronze"
+  },
+  {
+    "Code": "#AB784E",
+    "Color names": "Dark Almond"
+  },
+  {
+    "Code": "#966F33",
+    "Color names": "Wood"
+  },
+  {
+    "Code": "#906E3E",
+    "Color names": "Khaki Brown"
+  },
+  {
+    "Code": "#806517",
+    "Color names": "Oak Brown"
+  },
+  {
+    "Code": "#665D1E",
+    "Color names": "Antique Bronze"
+  },
+  {
+    "Code": "#8E7618",
+    "Color names": "Hazel"
+  },
+  {
+    "Code": "#8B8000",
+    "Color names": "Dark Yellow"
+  },
+  {
+    "Code": "#827839",
+    "Color names": "Dark Moccasin"
+  },
+  {
+    "Code": "#8A865D",
+    "Color names": "Khaki Green"
+  },
+  {
+    "Code": "#93917C",
+    "Color names": "Millennium Jade"
+  },
+  {
+    "Code": "#9F8C76",
+    "Color names": "Dark Beige"
+  },
+  {
+    "Code": "#AF9B60",
+    "Color names": "Bullet Shell"
+  },
+  {
+    "Code": "#827B60",
+    "Color names": "Army Brown"
+  },
+  {
+    "Code": "#786D5F",
+    "Color names": "Sandstone"
+  },
+  {
+    "Code": "#675B58",
+    "Color names": "Ash Brown"
+  },
+  {
+    "Code": "#483C32",
+    "Color names": "Taupe"
+  },
+  {
+    "Code": "#4A412A",
+    "Color names": "Dark Grayish Olive"
+  },
+  {
+    "Code": "#473810",
+    "Color names": "Dark Hazel Brown"
+  },
+  {
+    "Code": "#493D26",
+    "Color names": "Mocha"
+  },
+  {
+    "Code": "#513B1C",
+    "Color names": "Milk Chocolate"
+  },
+  {
+    "Code": "#49413F",
+    "Color names": "Western Charcoal"
+  },
+  {
+    "Code": "#3D3635",
+    "Color names": "Gray Brown"
+  },
+  {
+    "Code": "#35281E",
+    "Color names": "Cocoa Brown"
+  },
+  {
+    "Code": "#3B2F2F",
+    "Color names": "Dark Coffee"
+  },
+  {
+    "Code": "#43302E",
+    "Color names": "Old Burgundy"
+  },
+  {
+    "Code": "#622F22",
+    "Color names": "Red Brown"
+  },
+  {
+    "Code": "#5C3317",
+    "Color names": "Bakers Brown"
+  },
+  {
+    "Code": "#644117",
+    "Color names": "Pullman Brown"
+  },
+  {
+    "Code": "#654321",
+    "Color names": "Dark Brown"
+  },
+  {
+    "Code": "#704214",
+    "Color names": "Sepia Brown"
+  },
+  {
+    "Code": "#804A00",
+    "Color names": "Dark Bronze"
+  },
+  {
+    "Code": "#6F4E37",
+    "Color names": "Coffee"
+  },
+  {
+    "Code": "#835C3B",
+    "Color names": "Brown Bear"
+  },
+  {
+    "Code": "#7F5217",
+    "Color names": "Red Dirt"
+  },
+  {
+    "Code": "#7F462C",
+    "Color names": "Sepia"
+  },
+  {
+    "Code": "#A0522D",
+    "Color names": "Sienna (W3C)"
+  },
+  {
+    "Code": "#8B4513",
+    "Color names": "SaddleBrown (W3C)"
+  },
+  {
+    "Code": "#8A4117",
+    "Color names": "Dark Sienna"
+  },
+  {
+    "Code": "#7E3817",
+    "Color names": "Sangria"
+  },
+  {
+    "Code": "#7E3517",
+    "Color names": "Blood Red"
+  },
+  {
+    "Code": "#954535",
+    "Color names": "Chestnut"
+  },
+  {
+    "Code": "#A14D3A",
+    "Color names": "Dark Terracotta"
+  },
+  {
+    "Code": "#9E4638",
+    "Color names": "Coral Brown"
+  },
+  {
+    "Code": "#A05544",
+    "Color names": "Deep Amber"
+  },
+  {
+    "Code": "#C34A2C",
+    "Color names": "Chestnut Red"
+  },
+  {
+    "Code": "#B83C08",
+    "Color names": "Ginger Red"
+  },
+  {
+    "Code": "#C04000",
+    "Color names": "Mahogany"
+  },
+  {
+    "Code": "#EB5406",
+    "Color names": "Red Gold"
+  },
+  {
+    "Code": "#C35817",
+    "Color names": "Red Fox"
+  },
+  {
+    "Code": "#B06500",
+    "Color names": "Ginger"
+  },
+  {
+    "Code": "#B86500",
+    "Color names": "Dark Bisque"
+  },
+  {
+    "Code": "#B5651D",
+    "Color names": "Light Brown"
+  },
+  {
+    "Code": "#B76734",
+    "Color names": "Petra Gold"
+  },
+  {
+    "Code": "#A55D35",
+    "Color names": "Brown Rust"
+  },
+  {
+    "Code": "#C36241",
+    "Color names": "Rust"
+  },
+  {
+    "Code": "#CB6D51",
+    "Color names": "Copper Red"
+  },
+  {
+    "Code": "#C47451",
+    "Color names": "Orange Salmon"
+  },
+  {
+    "Code": "#D2691E",
+    "Color names": "Chocolate (W3C)"
+  },
+  {
+    "Code": "#CC6600",
+    "Color names": "Sedona"
+  },
+  {
+    "Code": "#E56717",
+    "Color names": "Papaya Orange"
+  },
+  {
+    "Code": "#E66C2C",
+    "Color names": "Halloween Orange"
+  },
+  {
+    "Code": "#FF6700",
+    "Color names": "Neon Orange"
+  },
+  {
+    "Code": "#FF5F1F",
+    "Color names": "Bright Orange"
+  },
+  {
+    "Code": "#FE632A",
+    "Color names": "Fluro Orange"
+  },
+  {
+    "Code": "#F87217",
+    "Color names": "Pumpkin Orange"
+  },
+  {
+    "Code": "#FF7900",
+    "Color names": "Safety Orange"
+  },
+  {
+    "Code": "#F88017",
+    "Color names": "Carrot Orange"
+  },
+  {
+    "Code": "#FF8C00",
+    "Color names": "DarkOrange (W3C)"
+  },
+  {
+    "Code": "#F87431",
+    "Color names": "Construction Cone Orange"
+  },
+  {
+    "Code": "#FF7722",
+    "Color names": "Indian Saffron"
+  },
+  {
+    "Code": "#E67451",
+    "Color names": "Sunrise Orange"
+  },
+  {
+    "Code": "#E3735E",
+    "Color names": "Terracotta"
+  },
+  {
+    "Code": "#FF8040",
+    "Color names": "Mango Orange"
+  },
+  {
+    "Code": "#FF7F50",
+    "Color names": "Coral (W3C)"
+  },
+  {
+    "Code": "#F88158",
+    "Color names": "Basket Ball Orange"
+  },
+  {
+    "Code": "#F9966B",
+    "Color names": "Light Salmon Rose"
+  },
+  {
+    "Code": "#FFA07A",
+    "Color names": "LightSalmon (W3C)"
+  },
+  {
+    "Code": "#F89880",
+    "Color names": "Pink Orange"
+  },
+  {
+    "Code": "#E9967A",
+    "Color names": "DarkSalmon (W3C)"
+  },
+  {
+    "Code": "#E78A61",
+    "Color names": "Tangerine"
+  },
+  {
+    "Code": "#DA8A67",
+    "Color names": "Light Copper"
+  },
+  {
+    "Code": "#FF8674",
+    "Color names": "Salmon Pink"
+  },
+  {
+    "Code": "#FA8072",
+    "Color names": "Salmon (W3C)"
+  },
+  {
+    "Code": "#F98B88",
+    "Color names": "Peach Pink"
+  },
+  {
+    "Code": "#F08080",
+    "Color names": "LightCoral (W3C)"
+  },
+  {
+    "Code": "#F67280",
+    "Color names": "Pastel Red"
+  },
+  {
+    "Code": "#E77471",
+    "Color names": "Pink Coral"
+  },
+  {
+    "Code": "#F75D59",
+    "Color names": "Bean Red"
+  },
+  {
+    "Code": "#E55451",
+    "Color names": "Valentine Red"
+  },
+  {
+    "Code": "#CD5C5C",
+    "Color names": "IndianRed (W3C)"
+  },
+  {
+    "Code": "#FF6347",
+    "Color names": "Tomato (W3C)"
+  },
+  {
+    "Code": "#E55B3C",
+    "Color names": "Shocking Orange"
+  },
+  {
+    "Code": "#FF4500",
+    "Color names": "OrangeRed (W3C)"
+  },
+  {
+    "Code": "#FF4040",
+    "Color names": "Coral Red"
+  },
+  {
+    "Code": "#FF0000",
+    "Color names": "Red (W3C)"
+  },
+  {
+    "Code": "#FD1C03",
+    "Color names": "Neon Red"
+  },
+  {
+    "Code": "#FF2400",
+    "Color names": "Scarlet Red"
+  },
+  {
+    "Code": "#F62217",
+    "Color names": "Ruby Red"
+  },
+  {
+    "Code": "#F70D1A",
+    "Color names": "Ferrari Red"
+  },
+  {
+    "Code": "#F62817",
+    "Color names": "Fire Engine Red"
+  },
+  {
+    "Code": "#E42217",
+    "Color names": "Lava Red"
+  },
+  {
+    "Code": "#E41B17",
+    "Color names": "Love Red"
+  },
+  {
+    "Code": "#DC381F",
+    "Color names": "Grapefruit"
+  },
+  {
+    "Code": "#C83F49",
+    "Color names": "Strawberry Red"
+  },
+  {
+    "Code": "#C24641",
+    "Color names": "Cherry Red"
+  },
+  {
+    "Code": "#C11B17",
+    "Color names": "Chilli Pepper"
+  },
+  {
+    "Code": "#B22222",
+    "Color names": "FireBrick (W3C)"
+  },
+  {
+    "Code": "#B21807",
+    "Color names": "Tomato Sauce Red"
+  },
+  {
+    "Code": "#A52A2A",
+    "Color names": "Brown (W3C)"
+  },
+  {
+    "Code": "#A70D2A",
+    "Color names": "Carbon Red"
+  },
+  {
+    "Code": "#9F000F",
+    "Color names": "Cranberry"
+  },
+  {
+    "Code": "#931314",
+    "Color names": "Saffron Red"
+  },
+  {
+    "Code": "#960018",
+    "Color names": "Carmine Red"
+  },
+  {
+    "Code": "#990000",
+    "Color names": "Crimson Red"
+  },
+  {
+    "Code": "#990012",
+    "Color names": "Red Wine or Wine Red"
+  },
+  {
+    "Code": "#8B0000",
+    "Color names": "DarkRed (W3C)"
+  },
+  {
+    "Code": "#8F0B0B",
+    "Color names": "Maroon Red"
+  },
+  {
+    "Code": "#800000",
+    "Color names": "Maroon (W3C)"
+  },
+  {
+    "Code": "#8C001A",
+    "Color names": "Burgundy"
+  },
+  {
+    "Code": "#7E191B",
+    "Color names": "Vermilion"
+  },
+  {
+    "Code": "#800517",
+    "Color names": "Deep Red"
+  },
+  {
+    "Code": "#800020",
+    "Color names": "Dark Burgundy"
+  },
+  {
+    "Code": "#733635",
+    "Color names": "Garnet Red"
+  },
+  {
+    "Code": "#6A2617",
+    "Color names": "Maroon Brown"
+  },
+  {
+    "Code": "#660000",
+    "Color names": "Red Blood"
+  },
+  {
+    "Code": "#551606",
+    "Color names": "Blood Night"
+  },
+  {
+    "Code": "#560319",
+    "Color names": "Dark Scarlet"
+  },
+  {
+    "Code": "#3F000F",
+    "Color names": "Chocolate Brown"
+  },
+  {
+    "Code": "#3D0C02",
+    "Color names": "Black Bean"
+  },
+  {
+    "Code": "#2F0909",
+    "Color names": "Dark Maroon"
+  },
+  {
+    "Code": "#2B1B17",
+    "Color names": "Midnight"
+  },
+  {
+    "Code": "#550A35",
+    "Color names": "Purple Lily"
+  },
+  {
+    "Code": "#810541",
+    "Color names": "Purple Maroon"
+  },
+  {
+    "Code": "#7D0541",
+    "Color names": "Plum Pie"
+  },
+  {
+    "Code": "#7D0552",
+    "Color names": "Plum Velvet"
+  },
+  {
+    "Code": "#872657",
+    "Color names": "Dark Raspberry"
+  },
+  {
+    "Code": "#7E354D",
+    "Color names": "Velvet Maroon"
+  },
+  {
+    "Code": "#7F4E52",
+    "Color names": "Rosy-Finch"
+  },
+  {
+    "Code": "#7F525D",
+    "Color names": "Dull Purple"
+  },
+  {
+    "Code": "#7F5A58",
+    "Color names": "Puce"
+  },
+  {
+    "Code": "#997070",
+    "Color names": "Rose Dust"
+  },
+  {
+    "Code": "#B1907F",
+    "Color names": "Pastel Brown"
+  },
+  {
+    "Code": "#B38481",
+    "Color names": "Rosy Pink"
+  },
+  {
+    "Code": "#BC8F8F",
+    "Color names": "RosyBrown (W3C)"
+  },
+  {
+    "Code": "#C5908E",
+    "Color names": "Khaki Rose"
+  },
+  {
+    "Code": "#C48793",
+    "Color names": "Lipstick Pink"
+  },
+  {
+    "Code": "#CC7A8B",
+    "Color names": "Dusky Pink"
+  },
+  {
+    "Code": "#C48189",
+    "Color names": "Pink Brown"
+  },
+  {
+    "Code": "#C08081",
+    "Color names": "Old Rose"
+  },
+  {
+    "Code": "#D58A94",
+    "Color names": "Dusty Pink"
+  },
+  {
+    "Code": "#E799A3",
+    "Color names": "Pink Daisy"
+  },
+  {
+    "Code": "#E7A1B0",
+    "Color names": "Rose Pink or Pink Rose"
+  },
+  {
+    "Code": "#E8ADAA",
+    "Color names": "Rose"
+  },
+  {
+    "Code": "#C9A9A6",
+    "Color names": "Dusty Rose"
+  },
+  {
+    "Code": "#C4AEAD",
+    "Color names": "Silver Pink"
+  },
+  {
+    "Code": "#E6C7C2",
+    "Color names": "Gold Pink"
+  },
+  {
+    "Code": "#ECC5C0",
+    "Color names": "Rose Gold"
+  },
+  {
+    "Code": "#FFCBA4",
+    "Color names": "Deep Peach"
+  },
+  {
+    "Code": "#F8B88B",
+    "Color names": "Pastel Orange"
+  },
+  {
+    "Code": "#EDC9AF",
+    "Color names": "Desert Sand"
+  },
+  {
+    "Code": "#FFDDCA",
+    "Color names": "Unbleached Silk"
+  },
+  {
+    "Code": "#FDD7E4",
+    "Color names": "Pig Pink"
+  },
+  {
+    "Code": "#F2D4D7",
+    "Color names": "Pale Pink"
+  },
+  {
+    "Code": "#FFE6E8",
+    "Color names": "Blush"
+  },
+  {
+    "Code": "#FFE4E1",
+    "Color names": "MistyRose (W3C)"
+  },
+  {
+    "Code": "#FFDFDD",
+    "Color names": "Pink Bubble Gum"
+  },
+  {
+    "Code": "#FBCFCD",
+    "Color names": "Light Rose"
+  },
+  {
+    "Code": "#FFCCCB",
+    "Color names": "Light Red"
+  },
+  {
+    "Code": "#F7CAC9",
+    "Color names": "Rose Quartz"
+  },
+  {
+    "Code": "#F6C6BD",
+    "Color names": "Warm Pink"
+  },
+  {
+    "Code": "#FBBBB9",
+    "Color names": "Deep Rose"
+  },
+  {
+    "Code": "#FFC0CB",
+    "Color names": "Pink (W3C)"
+  },
+  {
+    "Code": "#FFB6C1",
+    "Color names": "LightPink (W3C)"
+  },
+  {
+    "Code": "#FFB8BF",
+    "Color names": "Soft Pink"
+  },
+  {
+    "Code": "#FFB2D0",
+    "Color names": "Powder Pink"
+  },
+  {
+    "Code": "#FAAFBE",
+    "Color names": "Donut Pink"
+  },
+  {
+    "Code": "#FAAFBA",
+    "Color names": "Baby Pink"
+  },
+  {
+    "Code": "#F9A7B0",
+    "Color names": "Flamingo Pink"
+  },
+  {
+    "Code": "#FEA3AA",
+    "Color names": "Pastel Pink"
+  },
+  {
+    "Code": "#FF91AF",
+    "Color names": "Baker-Miller Pink"
+  },
+  {
+    "Code": "#E38AAE",
+    "Color names": "Cadillac Pink"
+  },
+  {
+    "Code": "#F778A1",
+    "Color names": "Carnation Pink"
+  },
+  {
+    "Code": "#E5788F",
+    "Color names": "Pastel Rose"
+  },
+  {
+    "Code": "#E56E94",
+    "Color names": "Blush Red"
+  },
+  {
+    "Code": "#DB7093",
+    "Color names": "PaleVioletRed (W3C)"
+  },
+  {
+    "Code": "#D16587",
+    "Color names": "Purple Pink"
+  },
+  {
+    "Code": "#C25A7C",
+    "Color names": "Tulip Pink"
+  },
+  {
+    "Code": "#C25283",
+    "Color names": "Bashful Pink"
+  },
+  {
+    "Code": "#E75480",
+    "Color names": "Dark Pink"
+  },
+  {
+    "Code": "#F660AB",
+    "Color names": "Dark Hot Pink"
+  },
+  {
+    "Code": "#FF69B4",
+    "Color names": "HotPink (W3C)"
+  },
+  {
+    "Code": "#FC6C85",
+    "Color names": "Watermelon Pink"
+  },
+  {
+    "Code": "#F6358A",
+    "Color names": "Violet Red"
+  },
+  {
+    "Code": "#F52887",
+    "Color names": "Hot Deep Pink"
+  },
+  {
+    "Code": "#FF007F",
+    "Color names": "Bright Pink"
+  },
+  {
+    "Code": "#FF0080",
+    "Color names": "Red Magenta"
+  },
+  {
+    "Code": "#FF1493",
+    "Color names": "DeepPink (W3C)"
+  },
+  {
+    "Code": "#F535AA",
+    "Color names": "Neon Pink"
+  },
+  {
+    "Code": "#FF33AA",
+    "Color names": "Chrome Pink"
+  },
+  {
+    "Code": "#FD349C",
+    "Color names": "Neon Hot Pink"
+  },
+  {
+    "Code": "#E45E9D",
+    "Color names": "Pink Cupcake"
+  },
+  {
+    "Code": "#E759AC",
+    "Color names": "Royal Pink"
+  },
+  {
+    "Code": "#E3319D",
+    "Color names": "Dimorphotheca Magenta"
+  },
+  {
+    "Code": "#DA1884",
+    "Color names": "Barbie Pink"
+  },
+  {
+    "Code": "#E4287C",
+    "Color names": "Pink Lemonade"
+  },
+  {
+    "Code": "#FA2A55",
+    "Color names": "Red Pink"
+  },
+  {
+    "Code": "#E30B5D",
+    "Color names": "Raspberry"
+  },
+  {
+    "Code": "#DC143C",
+    "Color names": "Crimson (W3C)"
+  },
+  {
+    "Code": "#C32148",
+    "Color names": "Bright Maroon"
+  },
+  {
+    "Code": "#C21E56",
+    "Color names": "Rose Red"
+  },
+  {
+    "Code": "#C12869",
+    "Color names": "Rogue Pink"
+  },
+  {
+    "Code": "#C12267",
+    "Color names": "Burnt Pink"
+  },
+  {
+    "Code": "#CA226B",
+    "Color names": "Pink Violet"
+  },
+  {
+    "Code": "#CC338B",
+    "Color names": "Magenta Pink"
+  },
+  {
+    "Code": "#C71585",
+    "Color names": "MediumVioletRed (W3C)"
+  },
+  {
+    "Code": "#C12283",
+    "Color names": "Dark Carnation Pink"
+  },
+  {
+    "Code": "#A24857",
+    "Color names": "Light Maroon"
+  },
+  {
+    "Code": "#B3446C",
+    "Color names": "Raspberry Purple"
+  },
+  {
+    "Code": "#B93B8F",
+    "Color names": "Pink Plum"
+  },
+  {
+    "Code": "#DA70D6",
+    "Color names": "Orchid (W3C)"
+  },
+  {
+    "Code": "#DF73D4",
+    "Color names": "Deep Mauve"
+  },
+  {
+    "Code": "#EE82EE",
+    "Color names": "Violet (W3C)"
+  },
+  {
+    "Code": "#FF77FF",
+    "Color names": "Fuchsia Pink"
+  },
+  {
+    "Code": "#F433FF",
+    "Color names": "Bright Neon Pink"
+  },
+  {
+    "Code": "#FF00FF",
+    "Color names": "Magenta or Fuchsia (W3C)"
+  },
+  {
+    "Code": "#E238EC",
+    "Color names": "Crimson Purple"
+  },
+  {
+    "Code": "#D462FF",
+    "Color names": "Heliotrope Purple"
+  },
+  {
+    "Code": "#C45AEC",
+    "Color names": "Tyrian Purple"
+  },
+  {
+    "Code": "#BA55D3",
+    "Color names": "MediumOrchid (W3C)"
+  },
+  {
+    "Code": "#A74AC7",
+    "Color names": "Purple Flower"
+  },
+  {
+    "Code": "#B048B5",
+    "Color names": "Orchid Purple"
+  },
+  {
+    "Code": "#B666D2",
+    "Color names": "Rich Lilac"
+  },
+  {
+    "Code": "#D291BC",
+    "Color names": "Pastel Violet"
+  },
+  {
+    "Code": "#A17188",
+    "Color names": "Rosy"
+  },
+  {
+    "Code": "#915F6D",
+    "Color names": "Mauve Taupe"
+  },
+  {
+    "Code": "#7E587E",
+    "Color names": "Viola Purple"
+  },
+  {
+    "Code": "#614051",
+    "Color names": "Eggplant"
+  },
+  {
+    "Code": "#583759",
+    "Color names": "Plum Purple"
+  },
+  {
+    "Code": "#5E5A80",
+    "Color names": "Grape"
+  },
+  {
+    "Code": "#4E5180",
+    "Color names": "Purple Navy"
+  },
+  {
+    "Code": "#6A5ACD",
+    "Color names": "SlateBlue (W3C)"
+  },
+  {
+    "Code": "#6960EC",
+    "Color names": "Blue Lotus"
+  },
+  {
+    "Code": "#5865F2",
+    "Color names": "Blurple"
+  },
+  {
+    "Code": "#736AFF",
+    "Color names": "Light Slate Blue"
+  },
+  {
+    "Code": "#7B68EE",
+    "Color names": "MediumSlateBlue (W3C)"
+  },
+  {
+    "Code": "#7575CF",
+    "Color names": "Periwinkle Purple"
+  },
+  {
+    "Code": "#6667AB",
+    "Color names": "Very Peri"
+  },
+  {
+    "Code": "#734F96",
+    "Color names": "Dark Lavender"
+  },
+  {
+    "Code": "#6F2DA8",
+    "Color names": "Bright Grape"
+  },
+  {
+    "Code": "#6A0DAD",
+    "Color names": "Bright Purple"
+  },
+  {
+    "Code": "#6C2DC7",
+    "Color names": "Purple Amethyst"
+  },
+  {
+    "Code": "#822EFF",
+    "Color names": "Blue Magenta"
+  },
+  {
+    "Code": "#5539CC",
+    "Color names": "Dark Blurple"
+  },
+  {
+    "Code": "#5453A6",
+    "Color names": "Deep Periwinkle"
+  },
+  {
+    "Code": "#483D8B",
+    "Color names": "DarkSlateBlue (W3C)"
+  },
+  {
+    "Code": "#4E387E",
+    "Color names": "Purple Haze"
+  },
+  {
+    "Code": "#571B7E",
+    "Color names": "Purple Iris"
+  },
+  {
+    "Code": "#4B0150",
+    "Color names": "Dark Purple"
+  },
+  {
+    "Code": "#36013F",
+    "Color names": "Deep Purple"
+  },
+  {
+    "Code": "#2E1A47",
+    "Color names": "Midnight Purple"
+  },
+  {
+    "Code": "#461B7E",
+    "Color names": "Purple Monster"
+  },
+  {
+    "Code": "#4B0082",
+    "Color names": "Indigo (W3C)"
+  },
+  {
+    "Code": "#342D7E",
+    "Color names": "Blue Whale"
+  },
+  {
+    "Code": "#663399",
+    "Color names": "RebeccaPurple (W3C)"
+  },
+  {
+    "Code": "#6A287E",
+    "Color names": "Purple Jam"
+  },
+  {
+    "Code": "#8B008B",
+    "Color names": "DarkMagenta (W3C)"
+  },
+  {
+    "Code": "#800080",
+    "Color names": "Purple (W3C)"
+  },
+  {
+    "Code": "#86608E",
+    "Color names": "French Lilac"
+  },
+  {
+    "Code": "#9932CC",
+    "Color names": "DarkOrchid (W3C)"
+  },
+  {
+    "Code": "#9400D3",
+    "Color names": "DarkViolet (W3C)"
+  },
+  {
+    "Code": "#8D38C9",
+    "Color names": "Purple Violet"
+  },
+  {
+    "Code": "#A23BEC",
+    "Color names": "Jasmine Purple"
+  },
+  {
+    "Code": "#B041FF",
+    "Color names": "Purple Daffodil"
+  },
+  {
+    "Code": "#842DCE",
+    "Color names": "Clematis Violet"
+  },
+  {
+    "Code": "#8A2BE2",
+    "Color names": "BlueViolet (W3C)"
+  },
+  {
+    "Code": "#7A5DC7",
+    "Color names": "Purple Sage Bush"
+  },
+  {
+    "Code": "#7F38EC",
+    "Color names": "Lovely Purple"
+  },
+  {
+    "Code": "#9D00FF",
+    "Color names": "Neon Purple"
+  },
+  {
+    "Code": "#8E35EF",
+    "Color names": "Purple Plum"
+  },
+  {
+    "Code": "#893BFF",
+    "Color names": "Aztech Purple"
+  },
+  {
+    "Code": "#9370DB",
+    "Color names": "MediumPurple (W3C)"
+  },
+  {
+    "Code": "#8467D7",
+    "Color names": "Light Purple"
+  },
+  {
+    "Code": "#9172EC",
+    "Color names": "Crocus Purple"
+  },
+  {
+    "Code": "#9E7BFF",
+    "Color names": "Purple Mimosa"
+  },
+  {
+    "Code": "#8686AF",
+    "Color names": "Pastel Indigo"
+  },
+  {
+    "Code": "#967BB6",
+    "Color names": "Lavender Purple"
+  },
+  {
+    "Code": "#B09FCA",
+    "Color names": "Rose Purple"
+  },
+  {
+    "Code": "#C8C4DF",
+    "Color names": "Viola"
+  },
+  {
+    "Code": "#CCCCFF",
+    "Color names": "Periwinkle"
+  },
+  {
+    "Code": "#DCD0FF",
+    "Color names": "Pale Lilac"
+  },
+  {
+    "Code": "#C8A2C8",
+    "Color names": "Lilac"
+  },
+  {
+    "Code": "#E0B0FF",
+    "Color names": "Mauve"
+  },
+  {
+    "Code": "#D891EF",
+    "Color names": "Bright Lilac"
+  },
+  {
+    "Code": "#C38EC7",
+    "Color names": "Purple Dragon"
+  },
+  {
+    "Code": "#DDA0DD",
+    "Color names": "Plum (W3C)"
+  },
+  {
+    "Code": "#E6A9EC",
+    "Color names": "Blush Pink"
+  },
+  {
+    "Code": "#F2A2E8",
+    "Color names": "Pastel Purple"
+  },
+  {
+    "Code": "#F9B7FF",
+    "Color names": "Blossom Pink"
+  },
+  {
+    "Code": "#C6AEC7",
+    "Color names": "Wisteria Purple"
+  },
+  {
+    "Code": "#D2B9D3",
+    "Color names": "Purple Thistle"
+  },
+  {
+    "Code": "#D8BFD8",
+    "Color names": "Thistle (W3C)"
+  },
+  {
+    "Code": "#DFD3E3",
+    "Color names": "Purple White"
+  },
+  {
+    "Code": "#E9CFEC",
+    "Color names": "Periwinkle Pink"
+  },
+  {
+    "Code": "#FCDFFF",
+    "Color names": "Cotton Candy"
+  },
+  {
+    "Code": "#EBDDE2",
+    "Color names": "Lavender Pinocchio"
+  },
+  {
+    "Code": "#E1D9D1",
+    "Color names": "Dark White"
+  },
+  {
+    "Code": "#E9E4D4",
+    "Color names": "Ash White"
+  },
+  {
+    "Code": "#EFEBD8",
+    "Color names": "Warm White"
+  },
+  {
+    "Code": "#EDE6D6",
+    "Color names": "White Chocolate"
+  },
+  {
+    "Code": "#F0E9D6",
+    "Color names": "Creamy White"
+  },
+  {
+    "Code": "#F8F0E3",
+    "Color names": "Off White"
+  },
+  {
+    "Code": "#FAF0DD",
+    "Color names": "Soft Ivory"
+  },
+  {
+    "Code": "#FFF8E7",
+    "Color names": "Cosmic Latte"
+  },
+  {
+    "Code": "#F8F6F0",
+    "Color names": "Pearl White"
+  },
+  {
+    "Code": "#F3E8EA",
+    "Color names": "Red White"
+  },
+  {
+    "Code": "#FFF0F5",
+    "Color names": "LavenderBlush (W3C)"
+  },
+  {
+    "Code": "#FDEEF4",
+    "Color names": "Pearl"
+  },
+  {
+    "Code": "#FFF9E3",
+    "Color names": "Egg Shell"
+  },
+  {
+    "Code": "#FEF0E3",
+    "Color names": "OldLace (W3C)"
+  },
+  {
+    "Code": "#EAEEE9",
+    "Color names": "White Ice"
+  },
+  {
+    "Code": "#FAF0E6",
+    "Color names": "Linen (W3C)"
+  },
+  {
+    "Code": "#FFF5EE",
+    "Color names": "SeaShell (W3C)"
+  },
+  {
+    "Code": "#F9F6EE",
+    "Color names": "Bone White"
+  },
+  {
+    "Code": "#FAF5EF",
+    "Color names": "Rice"
+  },
+  {
+    "Code": "#FFFAF0",
+    "Color names": "FloralWhite (W3C)"
+  },
+  {
+    "Code": "#FFFFF0",
+    "Color names": "Ivory (W3C)"
+  },
+  {
+    "Code": "#FFFFF4",
+    "Color names": "White Gold"
+  },
+  {
+    "Code": "#FFFFF7",
+    "Color names": "Light White"
+  },
+  {
+    "Code": "#FBFBF9",
+    "Color names": "Cotton"
+  },
+  {
+    "Code": "#FFFAFA",
+    "Color names": "Snow (W3C)"
+  },
+  {
+    "Code": "#FEFCFF",
+    "Color names": "Milk White"
+  },
+  {
+    "Code": "#FFFEFA",
+    "Color names": "Half White"
+  },
+  {
+    "Code": "#FFFFFF",
+    "Color names": "White (W3C)"
+  }
+]
