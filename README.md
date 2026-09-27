@@ -8,6 +8,16 @@ di `dist/`.
 Aturan kerja dan standar kualitas untuk kontributor maupun agent otomatis
 ada di [SKILL.md](SKILL.md).
 
+## Fitur Utama
+
+- Mode Pixel memakai EyeDropper API bila tersedia untuk membaca warna piksel
+  asli, termasuk pada gambar dan gradient.
+- Mode Style tetap tersedia sebagai fallback berbasis computed style.
+- History, posisi panel, tab aktif, dan cache database warna disimpan via
+  penyimpanan userscript supaya bertahan antar reload.
+- Database warna memakai cache stale-while-revalidate dan 30 warna dasar
+  bawaan sebagai fallback saat jaringan tidak tersedia.
+
 ## Alur Kerja
 
 ```bash

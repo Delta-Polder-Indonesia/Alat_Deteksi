@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/JD-YH03D/release
-// @version      2.2.0
+// @version      2.3.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
+// @grant        GM_setValue
+// @grant        GM_getValue
 // @connect      api.npoint.io
 // @run-at       document-idle
 // @icon         https://raw.githubusercontent.com/JD-YH03D/BintangToba/main/icon.svg
@@ -21,13 +23,58 @@
     /* ===== CONFIG ===== */
     const API_URL = 'https://api.npoint.io/a54d755ded5ab6c0e7d1';
     const LOG_PREFIX = '[Color Detector Pro]';
+    const DETECTION_MODE_EYEDROPPER = 'eyedropper';
+    const DETECTION_MODE_COMPUTED = 'computed';
+    const MAX_HISTORY_ITEMS = 50;
+    const COLOR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+    const STORAGE_KEYS = Object.freeze({
+        history: 'cdp_detection_history',
+        panelPosition: 'cdp_panel_position',
+        activeTab: 'cdp_active_tab',
+        colorCache: 'cdp_color_database_cache',
+    });
+    const FALLBACK_COLOR_DATABASE = Object.freeze([
+        { 'Color names': 'Black', Code: '#000000' },
+        { 'Color names': 'White', Code: '#FFFFFF' },
+        { 'Color names': 'Red', Code: '#FF0000' },
+        { 'Color names': 'Lime', Code: '#00FF00' },
+        { 'Color names': 'Blue', Code: '#0000FF' },
+        { 'Color names': 'Yellow', Code: '#FFFF00' },
+        { 'Color names': 'Cyan', Code: '#00FFFF' },
+        { 'Color names': 'Magenta', Code: '#FF00FF' },
+        { 'Color names': 'Silver', Code: '#C0C0C0' },
+        { 'Color names': 'Gray', Code: '#808080' },
+        { 'Color names': 'Maroon', Code: '#800000' },
+        { 'Color names': 'Olive', Code: '#808000' },
+        { 'Color names': 'Green', Code: '#008000' },
+        { 'Color names': 'Purple', Code: '#800080' },
+        { 'Color names': 'Teal', Code: '#008080' },
+        { 'Color names': 'Navy', Code: '#000080' },
+        { 'Color names': 'Orange', Code: '#FFA500' },
+        { 'Color names': 'Pink', Code: '#FFC0CB' },
+        { 'Color names': 'Brown', Code: '#A52A2A' },
+        { 'Color names': 'Gold', Code: '#FFD700' },
+        { 'Color names': 'Coral', Code: '#FF7F50' },
+        { 'Color names': 'Salmon', Code: '#FA8072' },
+        { 'Color names': 'Indigo', Code: '#4B0082' },
+        { 'Color names': 'Violet', Code: '#EE82EE' },
+        { 'Color names': 'Turquoise', Code: '#40E0D0' },
+        { 'Color names': 'Beige', Code: '#F5F5DC' },
+        { 'Color names': 'Ivory', Code: '#FFFFF0' },
+        { 'Color names': 'Lavender', Code: '#E6E6FA' },
+        { 'Color names': 'Mint', Code: '#98FF98' },
+        { 'Color names': 'Charcoal', Code: '#36454F' },
+    ]);
+
     let colorDatabase = [];
     let isPanelOpen = false;
     let isDetecting = false;
     let isPanelMinimized = false;
     let currentHighlight = null;
     let detectionHistory = [];
-
+    let activeTab = 'database';
+    let detectionMode = DETECTION_MODE_COMPUTED;
+    let isEyeDropperOpen = false;
     /* ===== STYLES ===== */
     GM_addStyle(`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -204,6 +251,30 @@
             background: linear-gradient(135deg, var(--cdp-success), #38a169);
             color: #fff;
             animation: cdp-pulse 2s infinite;
+        }
+        #cdp-mode-btn {
+            min-width: 68px;
+            padding: 10px 12px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 10px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit; font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: var(--cdp-transition);
+        }
+        #cdp-mode-btn:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+        }
+        #cdp-mode-btn.cdp-mode-pixel {
+            background: rgba(72,187,120,0.12);
+            border-color: rgba(72,187,120,0.35);
+            color: var(--cdp-success);
+        }
+        #cdp-mode-btn.cdp-mode-style {
+            background: rgba(102,126,234,0.08);
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-secondary);
         }
         #cdp-clear-btn {
             padding: 10px 14px;
@@ -578,9 +649,130 @@
             .replace(/'/g, '&#39;');
     }
 
+    function safeGetValue(key, defaultValue) {
+        try {
+            if (typeof GM_getValue !== 'function') return defaultValue;
+            return GM_getValue(key, defaultValue);
+        } catch (err) {
+            logError('safeGetValue ' + key, err);
+            return defaultValue;
+        }
+    }
+
+    function safeSetValue(key, value) {
+        try {
+            if (typeof GM_setValue === 'function') {
+                GM_setValue(key, value);
+            }
+        } catch (err) {
+            logError('safeSetValue ' + key, err);
+        }
+    }
+
+    function readJsonValue(key, defaultValue) {
+        const raw = safeGetValue(key, null);
+        if (raw === null || raw === undefined) return defaultValue;
+        if (typeof raw !== 'string') return raw;
+        try {
+            return JSON.parse(raw);
+        } catch (err) {
+            logError('readJsonValue ' + key, err);
+            return defaultValue;
+        }
+    }
+
+    function writeJsonValue(key, value) {
+        try {
+            safeSetValue(key, JSON.stringify(value));
+        } catch (err) {
+            logError('writeJsonValue ' + key, err);
+        }
+    }
+
+    function isValidTabName(tabName) {
+        return tabName === 'database' || tabName === 'history' || tabName === 'palette';
+    }
+
+    function loadStoredActiveTab() {
+        const tabName = safeGetValue(STORAGE_KEYS.activeTab, 'database');
+        if (isValidTabName(tabName)) return tabName;
+        logError('loadStoredActiveTab', new Error('Invalid stored tab: ' + tabName));
+        return 'database';
+    }
+
+    function saveActiveTab(tabName) {
+        if (isValidTabName(tabName)) {
+            safeSetValue(STORAGE_KEYS.activeTab, tabName);
+        }
+    }
+
+    function savePanelPosition(panel) {
+        const rect = panel.getBoundingClientRect();
+        writeJsonValue(STORAGE_KEYS.panelPosition, {
+            left: Math.round(rect.left),
+            top: Math.round(rect.top),
+        });
+    }
+
+    function restorePanelPosition(panel) {
+        const pos = readJsonValue(STORAGE_KEYS.panelPosition, null);
+        if (!pos) return;
+        const left = Number(pos.left);
+        const top = Number(pos.top);
+        if (!Number.isFinite(left) || !Number.isFinite(top)) {
+            logError('restorePanelPosition', new Error('Invalid stored panel position'));
+            return;
+        }
+        panel.style.left = Math.max(4, left) + 'px';
+        panel.style.top = Math.max(4, top) + 'px';
+        panel.style.right = 'auto';
+    }
+
+    function normalizeStoredHistoryItem(item) {
+        if (!item || typeof item !== 'object') return null;
+        const hex = normalizeHex(item.hex);
+        if (!hex) return null;
+        return {
+            hex,
+            name: String(item.name || 'Unknown'),
+            time: String(item.time || ''),
+            element: String(item.element || 'pixel'),
+        };
+    }
+
+    function loadStoredHistory() {
+        const stored = readJsonValue(STORAGE_KEYS.history, []);
+        if (!Array.isArray(stored)) {
+            logError('loadStoredHistory', new Error('Stored history is not an array'));
+            return [];
+        }
+        return stored
+            .map(normalizeStoredHistoryItem)
+            .filter(Boolean)
+            .slice(0, MAX_HISTORY_ITEMS);
+    }
+
+    function saveDetectionHistory() {
+        writeJsonValue(STORAGE_KEYS.history, detectionHistory.slice(0, MAX_HISTORY_ITEMS));
+    }
+
+    function updateHistoryBadge() {
+        const badge = document.getElementById('cdp-history-count');
+        if (badge) badge.textContent = detectionHistory.length;
+    }
+
     function hexToRgb(hex) {
         const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return r ? { r: parseInt(r[1],16), g: parseInt(r[2],16), b: parseInt(r[3],16) } : null;
+    }
+
+    function normalizeHex(hex) {
+        const rgb = hexToRgb(hex);
+        if (!rgb) return null;
+        return '#' + [rgb.r, rgb.g, rgb.b]
+            .map(x => x.toString(16).padStart(2, '0'))
+            .join('')
+            .toUpperCase();
     }
 
     function rgbToHsl(r, g, b) {
@@ -648,23 +840,34 @@
         toastTimer = setTimeout(() => t.classList.remove('cdp-toast-show'), 2000);
     }
 
+    function copyToClipboardFallback(text, clipboardErr) {
+        let ta = null;
+        try {
+            ta = document.createElement('textarea');
+            ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+            document.body.appendChild(ta); ta.select();
+            if (!document.execCommand('copy')) {
+                throw new Error('document.execCommand returned false');
+            }
+            showToast('Copied: ' + text);
+        } catch (fallbackErr) {
+            logError('copyToClipboard fallback', { clipboardErr, fallbackErr });
+            showToast('Copy failed');
+        } finally {
+            if (ta && ta.parentNode) ta.parentNode.removeChild(ta);
+        }
+    }
+
     function copyToClipboard(text) {
+        if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+            copyToClipboardFallback(text, new Error('Clipboard API is not available'));
+            return;
+        }
         navigator.clipboard.writeText(text).then(() => {
             showToast('Copied: ' + text);
         }).catch((clipboardErr) => {
-            // Clipboard API bisa ditolak (permission/kontex tidak aman) —
-            // coba fallback lama, dan laporkan bila keduanya gagal.
-            try {
-                const ta = document.createElement('textarea');
-                ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
-                document.body.appendChild(ta); ta.select();
-                document.execCommand('copy'); document.body.removeChild(ta);
-                showToast('Copied: ' + text);
-            } catch (fallbackErr) {
-                logError('copyToClipboard (clipboard API dan fallback gagal)',
-                    { clipboardErr, fallbackErr });
-                showToast('Copy failed');
-            }
+            logError('copyToClipboard clipboard API', clipboardErr);
+            copyToClipboardFallback(text, clipboardErr);
         });
     }
 
@@ -738,7 +941,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.2</span>
+                    <span id="cdp-version">v2.3</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
@@ -751,6 +954,7 @@
                     <span>◎</span>
                     <span id="cdp-detect-label">Start Color Detection</span>
                 </button>
+                <button id="cdp-mode-btn" type="button" title="Toggle detection mode">Mode</button>
                 <button id="cdp-clear-btn" title="Clear History">Clear</button>
             </div>
 
@@ -810,28 +1014,116 @@
 
     /* ===== EVENT LISTENERS ===== */
 
+    function browserSupportsEyeDropper() {
+        return typeof window.EyeDropper === 'function';
+    }
+
+    function updateDetectionModeButton() {
+        const modeBtn = document.getElementById('cdp-mode-btn');
+        if (!modeBtn) return;
+        const isPixel = detectionMode === DETECTION_MODE_EYEDROPPER;
+        modeBtn.textContent = isPixel ? 'Pixel' : 'Style';
+        modeBtn.classList.toggle('cdp-mode-pixel', isPixel);
+        modeBtn.classList.toggle('cdp-mode-style', !isPixel);
+        modeBtn.title = browserSupportsEyeDropper()
+            ? 'Toggle detection mode: Pixel uses EyeDropper, Style uses computed CSS'
+            : 'Pixel mode is not supported in this browser; using Style mode';
+    }
+
+    function updateDetectionControls() {
+        const detectBtn = document.getElementById('cdp-detect-btn');
+        const detectLabel = document.getElementById('cdp-detect-label');
+        const toggleBtn = document.getElementById('cdp-toggle-btn');
+        if (!detectBtn || !detectLabel || !toggleBtn) return;
+        detectBtn.className = isDetecting ? 'cdp-active' : 'cdp-inactive';
+        if (isDetecting) {
+            detectLabel.textContent = detectionMode === DETECTION_MODE_EYEDROPPER
+                ? 'Selecting pixel...'
+                : 'Detecting... (click to stop)';
+        } else {
+            detectLabel.textContent = detectionMode === DETECTION_MODE_EYEDROPPER
+                ? 'Pick Pixel Color'
+                : 'Start Style Detection';
+        }
+        toggleBtn.classList.toggle('cdp-detecting', isDetecting);
+    }
+
+    function setDetecting(active) {
+        isDetecting = active;
+        updateDetectionControls();
+        if (!active) {
+            document.getElementById('cdp-cursor-tooltip').classList.remove('cdp-tooltip-visible');
+            if (currentHighlight) {
+                currentHighlight.classList.remove('cdp-element-highlight');
+                currentHighlight = null;
+            }
+        }
+    }
+
+    function setDetectionMode(mode) {
+        const nextMode = mode === DETECTION_MODE_EYEDROPPER && browserSupportsEyeDropper()
+            ? DETECTION_MODE_EYEDROPPER
+            : DETECTION_MODE_COMPUTED;
+        if (detectionMode !== nextMode && isDetecting) {
+            setDetecting(false);
+        }
+        detectionMode = nextMode;
+        updateDetectionModeButton();
+        updateDetectionControls();
+    }
+
+    function selectTab(tabName, shouldPersist, shouldRender) {
+        activeTab = isValidTabName(tabName) ? tabName : 'database';
+        document.querySelectorAll('.cdp-tab').forEach(tab => {
+            tab.classList.toggle('cdp-tab-active', tab.dataset.tab === activeTab);
+        });
+        document.getElementById('cdp-search-box').style.display =
+            activeTab === 'database' ? 'block' : 'none';
+        if (shouldPersist) saveActiveTab(activeTab);
+        if (shouldRender) renderCurrentTab();
+    }
+
+    function setPanelOpen(panel, open) {
+        isPanelOpen = open;
+        panel.classList.toggle('cdp-hidden', !isPanelOpen);
+        if (isPanelOpen) {
+            requestAnimationFrame(guard('clampPanel after open', () => clampPanel(panel)));
+        }
+    }
+
+    function restoreUiState(panel) {
+        detectionHistory = loadStoredHistory();
+        updateHistoryBadge();
+        restorePanelPosition(panel);
+        const storedTab = loadStoredActiveTab();
+        selectTab(storedTab, false, storedTab !== 'database');
+        setDetectionMode(browserSupportsEyeDropper()
+            ? DETECTION_MODE_EYEDROPPER
+            : DETECTION_MODE_COMPUTED);
+    }
+
     function setupEventListeners() {
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
         const closeBtn = document.getElementById('cdp-btn-close');
         const minBtn = document.getElementById('cdp-btn-minimize');
         const detectBtn = document.getElementById('cdp-detect-btn');
+        const modeBtn = document.getElementById('cdp-mode-btn');
         const clearBtn = document.getElementById('cdp-clear-btn');
         const searchIn = document.getElementById('cdp-search-input');
         const tabs = document.querySelectorAll('.cdp-tab');
         const detDisp = document.getElementById('cdp-detector-display');
 
+        restoreUiState(panel);
+
         // Toggle
         toggleBtn.addEventListener('click', () => {
-            isPanelOpen = !isPanelOpen;
-            panel.classList.toggle('cdp-hidden', !isPanelOpen);
-            if (isPanelOpen) requestAnimationFrame(() => clampPanel(panel));
+            setPanelOpen(panel, !isPanelOpen);
         });
 
         // Close
         closeBtn.addEventListener('click', () => {
-            isPanelOpen = false;
-            panel.classList.add('cdp-hidden');
+            setPanelOpen(panel, false);
         });
 
         // Minimize
@@ -841,30 +1133,33 @@
             minBtn.innerHTML = isPanelMinimized ? '▢' : '─';
         });
 
-        // Satu-satunya jalur untuk mengubah mode deteksi,
-        // dipakai tombol Detect maupun tombol Escape.
-        function setDetecting(active) {
-            isDetecting = active;
-            detectBtn.className = active ? 'cdp-active' : 'cdp-inactive';
-            document.getElementById('cdp-detect-label').textContent =
-                active ? '● Detecting... (click to stop)' : 'Start Color Detection';
-            toggleBtn.classList.toggle('cdp-detecting', active);
-            if (!active) {
-                document.getElementById('cdp-cursor-tooltip').classList.remove('cdp-tooltip-visible');
-                if (currentHighlight) {
-                    currentHighlight.classList.remove('cdp-element-highlight');
-                    currentHighlight = null;
-                }
-            }
-        }
-
         // Detect
-        detectBtn.addEventListener('click', () => setDetecting(!isDetecting));
+        detectBtn.addEventListener('click', () => {
+            if (detectionMode === DETECTION_MODE_EYEDROPPER) {
+                startEyeDropperDetection();
+                return;
+            }
+            setDetecting(!isDetecting);
+        });
+
+        // Mode
+        modeBtn.addEventListener('click', () => {
+            if (!browserSupportsEyeDropper()) {
+                setDetectionMode(DETECTION_MODE_COMPUTED);
+                showToast('Pixel mode is not supported here');
+                return;
+            }
+            setDetectionMode(detectionMode === DETECTION_MODE_EYEDROPPER
+                ? DETECTION_MODE_COMPUTED
+                : DETECTION_MODE_EYEDROPPER);
+            showToast('Detection mode: ' + (detectionMode === DETECTION_MODE_EYEDROPPER ? 'Pixel' : 'Style'));
+        });
 
         // Clear
         clearBtn.addEventListener('click', () => {
             detectionHistory = [];
-            document.getElementById('cdp-history-count').textContent = '0';
+            updateHistoryBadge();
+            saveDetectionHistory();
             renderCurrentTab();
             showToast('History cleared');
         });
@@ -877,16 +1172,14 @@
         detDisp.style.cursor = 'pointer';
 
         // Search
-        searchIn.addEventListener('input', () => renderColorList(searchIn.value.trim()));
+        searchIn.addEventListener('input', () => {
+            if (activeTab === 'database') renderColorList(searchIn.value.trim());
+        });
 
         // Tabs
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('cdp-tab-active'));
-                tab.classList.add('cdp-tab-active');
-                document.getElementById('cdp-search-box').style.display =
-                    tab.dataset.tab === 'database' ? 'block' : 'none';
-                renderCurrentTab();
+                selectTab(tab.dataset.tab, true, true);
             });
         });
 
@@ -900,9 +1193,7 @@
         document.addEventListener('keydown', guard('keydown shortcut', (e) => {
             if (e.altKey && e.key.toLowerCase() === 'c') {
                 e.preventDefault();
-                isPanelOpen = !isPanelOpen;
-                panel.classList.toggle('cdp-hidden', !isPanelOpen);
-                if (isPanelOpen) requestAnimationFrame(() => clampPanel(panel));
+                setPanelOpen(panel, !isPanelOpen);
             }
             if (e.key === 'Escape' && isDetecting) {
                 setDetecting(false);
@@ -910,9 +1201,12 @@
         }));
 
         // Viewport resize — re-clamp
-        window.addEventListener('resize', () => {
-            if (isPanelOpen) clampPanel(panel);
-        });
+        window.addEventListener('resize', guard('window resize', () => {
+            if (isPanelOpen) {
+                clampPanel(panel);
+                savePanelPosition(panel);
+            }
+        }));
 
         // Draggable with grab cursor + boundary clamping
         makeDraggable(panel, document.getElementById('cdp-header'));
@@ -920,11 +1214,79 @@
 
     /* ===== MOUSE DETECTION ===== */
 
+    function isIgnoredDetectionTarget(target) {
+        return !target || typeof target.closest !== 'function' ||
+            target.closest('#cdp-panel') || target.closest('#cdp-toggle-btn') ||
+            target.closest('#cdp-cursor-tooltip') || target.closest('#cdp-toast');
+    }
+
+    function getColorName(hex) {
+        const closest = findClosestColor(hex);
+        return closest ? closest['Color names'] : 'Unknown';
+    }
+
+    function recordDetectedColor(hex, elementName) {
+        const normalizedHex = normalizeHex(hex);
+        if (!normalizedHex) {
+            logError('recordDetectedColor', new Error('Invalid color: ' + hex));
+            return null;
+        }
+        const name = getColorName(normalizedHex);
+        const record = {
+            hex: normalizedHex,
+            name,
+            time: new Date().toLocaleTimeString(),
+            element: elementName || 'pixel',
+        };
+        updatePreview(record.hex, record.name);
+        detectionHistory.unshift(record);
+        if (detectionHistory.length > MAX_HISTORY_ITEMS) detectionHistory.pop();
+        updateHistoryBadge();
+        saveDetectionHistory();
+        renderCurrentTab();
+        return record;
+    }
+
+    async function startEyeDropperDetection() {
+        if (isEyeDropperOpen) return;
+        if (!browserSupportsEyeDropper()) {
+            setDetectionMode(DETECTION_MODE_COMPUTED);
+            setDetecting(true);
+            showToast('Pixel mode unavailable; using style mode');
+            return;
+        }
+
+        let keepComputedModeActive = false;
+        isEyeDropperOpen = true;
+        setDetecting(true);
+        try {
+            const result = await new window.EyeDropper().open();
+            const hex = normalizeHex(result && result.sRGBHex);
+            if (!hex) {
+                throw new Error('EyeDropper returned an invalid color');
+            }
+            const record = recordDetectedColor(hex, 'pixel');
+            if (record) copyToClipboard(record.hex);
+        } catch (err) {
+            logError('startEyeDropperDetection', err);
+            if (err && err.name === 'AbortError') {
+                showToast('Pixel selection canceled');
+            } else {
+                showToast('Pixel mode failed; using style mode');
+                setDetectionMode(DETECTION_MODE_COMPUTED);
+                setDetecting(true);
+                keepComputedModeActive = true;
+            }
+        } finally {
+            isEyeDropperOpen = false;
+            if (!keepComputedModeActive) setDetecting(false);
+        }
+    }
+
     function handleMouseMove(e) {
-        if (!isDetecting) return;
+        if (!isDetecting || detectionMode !== DETECTION_MODE_COMPUTED) return;
         const target = e.target;
-        if (!target || target.closest('#cdp-panel') || target.closest('#cdp-toggle-btn') ||
-            target.closest('#cdp-cursor-tooltip') || target.closest('#cdp-toast')) return;
+        if (isIgnoredDetectionTarget(target)) return;
 
         if (currentHighlight && currentHighlight !== target) {
             currentHighlight.classList.remove('cdp-element-highlight');
@@ -935,14 +1297,13 @@
         const hex = getElementColor(target);
         if (!hex) return;
 
-        const closest = findClosestColor(hex);
-        const colorName = closest ? closest['Color names'] : 'Unknown';
+        const colorName = getColorName(hex);
         updatePreview(hex, colorName);
 
         // Tooltip
         const tip = document.getElementById('cdp-cursor-tooltip');
         tip.classList.add('cdp-tooltip-visible');
-        let tx = e.clientX + 18, ty = e.clientY + 18;
+        const tx = e.clientX + 18, ty = e.clientY + 18;
         tip.style.left = tx + 'px'; tip.style.top = ty + 'px';
         const tr = tip.getBoundingClientRect();
         if (tr.right > window.innerWidth) tip.style.left = (e.clientX - tr.width - 10) + 'px';
@@ -954,25 +1315,17 @@
     }
 
     function handleDetectionClick(e) {
-        if (!isDetecting) return;
+        if (!isDetecting || detectionMode !== DETECTION_MODE_COMPUTED) return;
         const target = e.target;
-        if (target.closest('#cdp-panel') || target.closest('#cdp-toggle-btn') ||
-            target.closest('#cdp-cursor-tooltip') || target.closest('#cdp-toast')) return;
+        if (isIgnoredDetectionTarget(target)) return;
 
         e.preventDefault(); e.stopPropagation();
 
         const hex = getElementColor(target);
         if (!hex) return;
 
-        const closest = findClosestColor(hex);
-        detectionHistory.unshift({
-            hex, name: closest ? closest['Color names'] : 'Unknown',
-            time: new Date().toLocaleTimeString(), element: target.tagName.toLowerCase()
-        });
-        if (detectionHistory.length > 50) detectionHistory.pop();
-        document.getElementById('cdp-history-count').textContent = detectionHistory.length;
-        copyToClipboard(hex);
-        renderCurrentTab();
+        const record = recordDetectedColor(hex, target.tagName.toLowerCase());
+        if (record) copyToClipboard(record.hex);
     }
 
     /* ===== DRAG — grab/grabbing cursor + boundary clamp ===== */
@@ -1020,20 +1373,20 @@
             element.style.right = 'auto';
         }));
 
-        document.addEventListener('mouseup', () => {
+        document.addEventListener('mouseup', guard('makeDraggable mouseup', () => {
             if (isDragging) {
                 isDragging = false;
                 element.style.transition = '';
                 handle.classList.remove('cdp-dragging');
+                savePanelPosition(element);
             }
-        });
+        }));
     }
 
     /* ===== RENDER ===== */
 
     function renderCurrentTab() {
-        const active = document.querySelector('.cdp-tab.cdp-tab-active');
-        const tab = active ? active.dataset.tab : 'database';
+        const tab = isValidTabName(activeTab) ? activeTab : 'database';
         if (tab === 'database') renderColorList(document.getElementById('cdp-search-input').value.trim());
         else if (tab === 'history') renderHistory();
         else if (tab === 'palette') renderPalette();
@@ -1093,7 +1446,7 @@
             container.innerHTML = `
                 <div class="cdp-empty-state">
                     <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
-                    <div class="cdp-empty-state-text">No detection history yet.<br>Enable detection and hover over elements.</div>
+                    <div class="cdp-empty-state-text">No detection history yet.<br>Pick a pixel color or enable style detection.</div>
                 </div>`;
             return;
         }
@@ -1101,8 +1454,6 @@
         detectionHistory.forEach(item => {
             const hex = escapeHtml(item.hex);
             const name = escapeHtml(item.name);
-            const rgb = hexToRgb(item.hex);
-            const rs = rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : '—';
             html += `
                 <div class="cdp-color-item" data-hex="${hex}" data-name="${name}">
                     <div class="cdp-color-swatch" style="background:${hex};"></div>
@@ -1170,51 +1521,132 @@
 
     const FETCH_TIMEOUT_MS = 15000;
 
-    // Satu jalur untuk semua keadaan gagal fetch, supaya markup dan status
-    // tidak diduplikasi di tiap handler. Detail error selalu dilaporkan ke
-    // console lewat logError agar langsung terdeteksi saat debugging.
-    function showFetchError(statusText, message, detail) {
-        logError('fetchColors — ' + statusText, detail);
+    function normalizeColorDatabase(data) {
+        if (!Array.isArray(data)) {
+            throw new Error('Unexpected response shape: expected an array');
+        }
+        const colors = [];
+        data.forEach(item => {
+            if (!item || typeof item !== 'object') return;
+            const code = normalizeHex(item.Code);
+            const name = String(item['Color names'] || '').trim();
+            if (!code || !name) return;
+            colors.push({ 'Color names': name, Code: code });
+        });
+        if (colors.length === 0) {
+            throw new Error('Database did not contain valid colors');
+        }
+        return colors;
+    }
+
+    function cloneFallbackColorDatabase() {
+        return FALLBACK_COLOR_DATABASE.map(color => ({
+            'Color names': color['Color names'],
+            Code: color.Code,
+        }));
+    }
+
+    function loadColorCache() {
+        const cached = readJsonValue(STORAGE_KEYS.colorCache, null);
+        if (!cached) return null;
+        try {
+            const savedAt = Number(cached.savedAt);
+            if (!Number.isFinite(savedAt)) {
+                throw new Error('Cached database timestamp is invalid');
+            }
+            return {
+                data: normalizeColorDatabase(cached.data),
+                savedAt,
+            };
+        } catch (err) {
+            logError('loadColorCache', err);
+            return null;
+        }
+    }
+
+    function saveColorCache(data) {
+        writeJsonValue(STORAGE_KEYS.colorCache, {
+            data,
+            savedAt: Date.now(),
+        });
+    }
+
+    function setDatabaseStatus(statusText) {
         document.getElementById('cdp-status-text').textContent = statusText;
-        document.getElementById('cdp-color-list-container').innerHTML = `
-            <div class="cdp-empty-state">
-                <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
-                <div class="cdp-empty-state-text">${message}</div>
-            </div>`;
+    }
+
+    function applyColorDatabase(data, statusText) {
+        colorDatabase = data;
+        document.getElementById('cdp-db-count').textContent = colorDatabase.length;
+        setDatabaseStatus(statusText);
+        renderCurrentTab();
+    }
+
+    function applyFallbackColorDatabase(statusText) {
+        applyColorDatabase(cloneFallbackColorDatabase(), statusText);
+    }
+
+    function handleColorRequestFailure(statusText, detail, isBackgroundRefresh) {
+        logError('fetchColors - ' + statusText, detail);
+        const cached = loadColorCache();
+        if (cached) {
+            if (isBackgroundRefresh && colorDatabase.length > 0) {
+                setDatabaseStatus('Using cached colors; refresh failed');
+            } else {
+                applyColorDatabase(cached.data, 'Using cached colors; refresh failed');
+            }
+            return;
+        }
+        applyFallbackColorDatabase('Using bundled fallback colors');
+    }
+
+    function refreshColorDatabase(isBackgroundRefresh) {
+        try {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: API_URL,
+                timeout: FETCH_TIMEOUT_MS,
+                onload(response) {
+                    try {
+                        if (response.status < 200 || response.status >= 300) {
+                            throw new Error('HTTP status ' + response.status);
+                        }
+                        const data = normalizeColorDatabase(JSON.parse(response.responseText));
+                        saveColorCache(data);
+                        applyColorDatabase(data, isBackgroundRefresh
+                            ? data.length + ' colors refreshed in background'
+                            : data.length + ' colors loaded successfully');
+                    } catch (err) {
+                        handleColorRequestFailure('Failed to load database', err, isBackgroundRefresh);
+                    }
+                },
+                onerror(response) {
+                    handleColorRequestFailure('Connection error',
+                        { url: API_URL, status: response && response.status },
+                        isBackgroundRefresh);
+                },
+                ontimeout() {
+                    handleColorRequestFailure('Connection timed out',
+                        { url: API_URL, timeoutMs: FETCH_TIMEOUT_MS },
+                        isBackgroundRefresh);
+                }
+            });
+        } catch (err) {
+            handleColorRequestFailure('Request failed to start', err, isBackgroundRefresh);
+        }
     }
 
     function fetchColors() {
-        GM_xmlhttpRequest({
-            method: 'GET',
-            url: API_URL,
-            timeout: FETCH_TIMEOUT_MS,
-            onload(response) {
-                try {
-                    const data = JSON.parse(response.responseText);
-                    if (!Array.isArray(data)) {
-                        throw new Error('Unexpected response shape: expected an array');
-                    }
-                    colorDatabase = data;
-                    document.getElementById('cdp-db-count').textContent = colorDatabase.length;
-                    document.getElementById('cdp-status-text').textContent =
-                        colorDatabase.length + ' colors loaded successfully';
-                    renderColorList();
-                } catch (e) {
-                    showFetchError('Failed to parse database',
-                        'Failed to load color database.<br>The server response was not valid.', e);
-                }
-            },
-            onerror(response) {
-                showFetchError('Connection error',
-                    'Could not connect to server.<br>Please check your internet connection.',
-                    { url: API_URL, status: response && response.status });
-            },
-            ontimeout() {
-                showFetchError('Connection timed out',
-                    'The server took too long to respond.<br>Please try again later.',
-                    { url: API_URL, timeoutMs: FETCH_TIMEOUT_MS });
-            }
-        });
+        const cached = loadColorCache();
+        if (cached) {
+            const isStale = Date.now() - cached.savedAt > COLOR_CACHE_TTL_MS;
+            applyColorDatabase(cached.data, isStale
+                ? cached.data.length + ' cached colors loaded; refreshing'
+                : cached.data.length + ' cached colors loaded');
+            if (isStale) refreshColorDatabase(true);
+            return;
+        }
+        refreshColorDatabase(false);
     }
 
     /* ===== INIT ===== */

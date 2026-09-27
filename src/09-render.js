@@ -1,8 +1,7 @@
     /* ===== RENDER ===== */
 
     function renderCurrentTab() {
-        const active = document.querySelector('.cdp-tab.cdp-tab-active');
-        const tab = active ? active.dataset.tab : 'database';
+        const tab = isValidTabName(activeTab) ? activeTab : 'database';
         if (tab === 'database') renderColorList(document.getElementById('cdp-search-input').value.trim());
         else if (tab === 'history') renderHistory();
         else if (tab === 'palette') renderPalette();
@@ -62,7 +61,7 @@
             container.innerHTML = `
                 <div class="cdp-empty-state">
                     <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
-                    <div class="cdp-empty-state-text">No detection history yet.<br>Enable detection and hover over elements.</div>
+                    <div class="cdp-empty-state-text">No detection history yet.<br>Pick a pixel color or enable style detection.</div>
                 </div>`;
             return;
         }
@@ -70,8 +69,6 @@
         detectionHistory.forEach(item => {
             const hex = escapeHtml(item.hex);
             const name = escapeHtml(item.name);
-            const rgb = hexToRgb(item.hex);
-            const rs = rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : '—';
             html += `
                 <div class="cdp-color-item" data-hex="${hex}" data-name="${name}">
                     <div class="cdp-color-swatch" style="background:${hex};"></div>

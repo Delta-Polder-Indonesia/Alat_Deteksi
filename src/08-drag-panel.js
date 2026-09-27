@@ -43,12 +43,13 @@
             element.style.right = 'auto';
         }));
 
-        document.addEventListener('mouseup', () => {
+        document.addEventListener('mouseup', guard('makeDraggable mouseup', () => {
             if (isDragging) {
                 isDragging = false;
                 element.style.transition = '';
                 handle.classList.remove('cdp-dragging');
+                savePanelPosition(element);
             }
-        });
+        }));
     }
 

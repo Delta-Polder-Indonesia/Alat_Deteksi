@@ -175,6 +175,30 @@
             color: #fff;
             animation: cdp-pulse 2s infinite;
         }
+        #cdp-mode-btn {
+            min-width: 68px;
+            padding: 10px 12px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 10px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit; font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: var(--cdp-transition);
+        }
+        #cdp-mode-btn:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+        }
+        #cdp-mode-btn.cdp-mode-pixel {
+            background: rgba(72,187,120,0.12);
+            border-color: rgba(72,187,120,0.35);
+            color: var(--cdp-success);
+        }
+        #cdp-mode-btn.cdp-mode-style {
+            background: rgba(102,126,234,0.08);
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-secondary);
+        }
         #cdp-clear-btn {
             padding: 10px 14px;
             border: 1px solid var(--cdp-border);
