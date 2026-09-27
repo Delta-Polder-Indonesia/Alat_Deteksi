@@ -15,14 +15,13 @@
         // Toggle Button
         const toggleBtn = document.createElement('button');
         toggleBtn.id = 'cdp-toggle-btn';
+        toggleBtn.type = 'button';
         toggleBtn.innerHTML = pipetteIcon(24);
-        toggleBtn.title = 'Color Detector Pro (Alt+C)';
+        toggleBtn.title = 'Show Color Detector Pro (Alt+C)';
+        toggleBtn.setAttribute('aria-label', 'Show Color Detector Pro');
+        toggleBtn.setAttribute('aria-controls', 'cdp-panel');
+        toggleBtn.setAttribute('aria-expanded', 'false');
         document.body.appendChild(toggleBtn);
-
-        // Toast
-        const toast = document.createElement('div');
-        toast.id = 'cdp-toast';
-        document.body.appendChild(toast);
 
         // Cursor Tooltip
         const tooltip = document.createElement('div');
@@ -39,16 +38,24 @@
         const panel = document.createElement('div');
         panel.id = 'cdp-panel';
         panel.classList.add('cdp-hidden');
+        panel.setAttribute('aria-hidden', 'true');
         panel.innerHTML = `
             <div id="cdp-header">
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.7</span>
+                    <span id="cdp-version">v2.8.0</span>
+                    <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
+                        <span id="cdp-header-notification-icon" aria-hidden="true">
+                            <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
+                            <svg class="cdp-notification-icon-error" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                            <svg class="cdp-notification-icon-info" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                        </span>
+                        <span id="cdp-header-notification-text"></span>
+                    </div>
                 </div>
                 <div id="cdp-header-actions">
-                    <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
-                    <button class="cdp-header-btn" id="cdp-btn-close" title="Close Panel">&times;</button>
+                    <button class="cdp-header-btn" id="cdp-btn-close" type="button" title="Hide sidebar" aria-label="Hide sidebar">&times;</button>
                 </div>
             </div>
 

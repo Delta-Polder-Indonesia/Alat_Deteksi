@@ -21,6 +21,58 @@ function loadUtilities() {
     return sandbox.module.exports;
 }
 
+function loadNotificationUtilities() {
+    const sourcePath = path.join(__dirname, '..', 'src', '03-utilities.js');
+    const source = fs.readFileSync(sourcePath, 'utf8');
+    const notification = {
+        className: '',
+        attributes: {},
+        classList: {
+            remove() {},
+        },
+        setAttribute(name, value) {
+            this.attributes[name] = value;
+        },
+    };
+    const notificationText = { textContent: '' };
+    let copiedText = '';
+    const sandbox = {
+        module: { exports: {} },
+        console,
+        notificationTimer: null,
+        clearTimeout() {},
+        setTimeout() {
+            return 1;
+        },
+        document: {
+            getElementById(id) {
+                if (id === 'cdp-header-notification') return notification;
+                if (id === 'cdp-header-notification-text') return notificationText;
+                return null;
+            },
+        },
+        navigator: {
+            clipboard: {
+                writeText(text) {
+                    copiedText = text;
+                    return Promise.resolve();
+                },
+            },
+        },
+    };
+
+    vm.runInNewContext(`${source}\nmodule.exports = { copyToClipboard };`, sandbox, {
+        filename: sourcePath,
+    });
+
+    return {
+        copyToClipboard: sandbox.module.exports.copyToClipboard,
+        notification,
+        notificationText,
+        copiedText: () => copiedText,
+    };
+}
+
 const {
     hexToRgb,
     rgbToHsl,
@@ -81,4 +133,17 @@ test('escapeHtml escapes characters used in HTML text and attributes', () => {
     assert.equal(escapeHtml('&<>"\''), '&amp;&lt;&gt;&quot;&#39;');
     assert.equal(escapeHtml('Color Detector'), 'Color Detector');
     assert.equal(escapeHtml(123), '123');
+});
+
+test('copyToClipboard shows a compact success message instead of copied SVG code', async () => {
+    const utility = loadNotificationUtilities();
+    const svgCode = '<svg><path d="M0 0h24v24H0z"/></svg>';
+
+    utility.copyToClipboard(svgCode, 'SVG copied');
+    await new Promise(resolve => setImmediate(resolve));
+
+    assert.equal(utility.copiedText(), svgCode);
+    assert.equal(utility.notificationText.textContent, 'SVG copied');
+    assert.equal(utility.notification.className, 'cdp-notification-success cdp-notification-visible');
+    assert.equal(utility.notificationText.textContent.includes('<svg>'), false);
 });

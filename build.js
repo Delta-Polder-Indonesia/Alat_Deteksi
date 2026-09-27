@@ -24,7 +24,7 @@ const SRC_DIR = path.join(ROOT, 'src');
 const DIST_DIR = path.join(ROOT, 'dist');
 const OUT_FILE = path.join(DIST_DIR, 'ColorDetektor.user.js');
 
-/* Urutan penggabungan. File nomor 01..11 = isi utama userscript.
+/* Urutan penggabungan bagian utama userscript.
    HATI-HATI: jangan ubah urutan kecuali tahu akibatnya —
    semua bagian berbagi scope yang sama di dalam satu IIFE. */
 const ORDER = [
@@ -32,12 +32,10 @@ const ORDER = [
     '00-header.js',       // pembuka IIFE + 'use strict'
     '01-config.js',       // konstanta & state global (API_URL, flags)
     '02-styles.js',       // semua CSS via GM_addStyle
-    '03-utilities.js',    // konversi warna, pencocokan warna, clipboard, toast
-    '04-viewport-clamp.js',// jaga panel tetap di dalam layar
+    '03-utilities.js',    // konversi warna, pencocokan warna, clipboard, notifikasi
     '05-build-ui.js',     // pembuatan elemen DOM panel/tombol/tooltip
     '06-event-listeners.js', // pasang semua event listener
     '07-mouse-detection.js', // hover highlight + klik deteksi warna
-    '08-drag-panel.js',   // drag panel dengan boundary clamp
     '09-render.js',       // render list database, history, palette
     '10-fetch-colors.js', // ambil database warna via GM_xmlhttpRequest
     '11-init.js',         // buildUI() + fetchColors()

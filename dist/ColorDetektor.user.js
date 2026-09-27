@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/JD-YH03D/release
-// @version      2.7.0
+// @version      2.8.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -47,7 +47,6 @@
     ]);
     const STORAGE_KEYS = Object.freeze({
         history: 'cdp_detection_history',
-        panelPosition: 'cdp_panel_position',
         activeTab: 'cdp_active_tab',
         colorCache: 'cdp_color_database_cache',
     });
@@ -87,7 +86,6 @@
     let colorDatabase = [];
     let isPanelOpen = false;
     let isDetecting = false;
-    let isPanelMinimized = false;
     let currentHighlight = null;
     let detectionHistory = [];
     let activeTab = 'database';
@@ -113,6 +111,7 @@
         scannedAt: null,
     };
     let isScanningSiteInfo = false;
+    let notificationTimer = null;
     /* ===== STYLES ===== */
     GM_addStyle(`
         :root {
@@ -132,35 +131,41 @@
             --cdp-warning: #d29922;
             --cdp-danger: #da3633;
             --cdp-radius: 6px;
+            --cdp-sidebar-width: min(460px, calc(100vw - 64px));
             --cdp-transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
         }
 
-        /* ----- PANEL ----- */
+        /* ----- SIDEBAR PANEL ----- */
         #cdp-panel {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 460px;
-            max-height: 92vh;
+            top: 0;
+            right: 0;
+            width: var(--cdp-sidebar-width);
+            height: 100vh;
+            height: 100dvh;
+            box-sizing: border-box;
             background: var(--cdp-bg-dark);
-            border: 1px solid var(--cdp-border);
-            border-radius: var(--cdp-radius);
-            box-shadow: 0 12px 28px rgba(1,4,9,0.42);
+            border: 0;
+            border-left: 1px solid var(--cdp-border);
+            border-radius: 0;
+            box-shadow: -12px 0 28px rgba(1,4,9,0.42);
             z-index: 2147483647;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--cdp-text-primary);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transform: translateX(0);
+            visibility: visible;
+            transition: transform 0.22s ease, visibility 0s linear 0s;
             backdrop-filter: none;
         }
-        #cdp-panel.cdp-minimized {
-            max-height: 52px;
-            min-height: 52px;
-            overflow: hidden;
-        }
         #cdp-panel.cdp-hidden {
-            display: none;
+            display: flex;
+            transform: translateX(100%);
+            visibility: hidden;
+            pointer-events: none;
+            transition: transform 0.22s ease, visibility 0s linear 0.22s;
         }
 
         /* ----- HEADER ----- */
@@ -171,15 +176,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            cursor: grab;
             user-select: none;
             flex-shrink: 0;
         }
-        #cdp-header:active,
-        #cdp-header.cdp-dragging {
-            cursor: grabbing;
-        }
         #cdp-header-left {
+            flex: 1;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -206,6 +207,7 @@
             text-overflow: ellipsis;
         }
         #cdp-version {
+            flex-shrink: 0;
             font-size: 11px;
             background: var(--cdp-bg-dark);
             color: var(--cdp-text-secondary);
@@ -213,6 +215,48 @@
             padding: 1px 6px;
             border-radius: 999px;
             font-weight: 600;
+        }
+        #cdp-header-notification {
+            visibility: hidden;
+            flex: 0 1 140px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1;
+        }
+        #cdp-header-notification.cdp-notification-visible {
+            visibility: visible;
+        }
+        #cdp-header-notification.cdp-notification-success {
+            color: #3fb950;
+        }
+        #cdp-header-notification.cdp-notification-error {
+            color: #f85149;
+        }
+        #cdp-header-notification.cdp-notification-info {
+            color: var(--cdp-accent);
+        }
+        #cdp-header-notification-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+        #cdp-header-notification-icon svg {
+            display: none;
+        }
+        #cdp-header-notification.cdp-notification-success .cdp-notification-icon-success,
+        #cdp-header-notification.cdp-notification-error .cdp-notification-icon-error,
+        #cdp-header-notification.cdp-notification-info .cdp-notification-icon-info {
+            display: block;
+        }
+        #cdp-header-notification-text {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         #cdp-header-actions {
             display: flex;
@@ -335,13 +379,20 @@
         }
         #cdp-color-info {
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 5px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas:
+                'name name'
+                'hex contrast-white'
+                'rgb contrast-black'
+                'hsl copy-hint';
+            align-items: center;
+            column-gap: 12px;
+            row-gap: 1px;
             min-width: 0;
         }
         #cdp-color-name {
+            grid-area: name;
             font-size: 16px;
             font-weight: 600;
             color: var(--cdp-text-primary);
@@ -349,29 +400,46 @@
             overflow-wrap: anywhere;
         }
         #cdp-color-hex {
+            grid-area: hex;
             font-size: 20px;
             font-weight: 700;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             letter-spacing: 0.2px;
+            white-space: nowrap;
         }
         #cdp-color-rgb,
         #cdp-color-hsl {
             font-size: 12px;
             color: var(--cdp-text-secondary);
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            white-space: nowrap;
+        }
+        #cdp-color-rgb {
+            grid-area: rgb;
+        }
+        #cdp-color-hsl {
+            grid-area: hsl;
         }
         #cdp-contrast-panel {
-            display: grid;
-            gap: 3px;
-            margin-top: 2px;
+            display: contents;
         }
         .cdp-contrast-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
+            min-width: 0;
             font-size: 11px;
             color: var(--cdp-text-secondary);
+        }
+        #cdp-contrast-panel .cdp-contrast-row:first-child {
+            grid-area: contrast-white;
+        }
+        #cdp-contrast-panel .cdp-contrast-row:last-child {
+            grid-area: contrast-black;
+        }
+        .cdp-contrast-row span {
+            white-space: nowrap;
         }
         .cdp-contrast-row strong {
             color: var(--cdp-text-primary);
@@ -381,8 +449,10 @@
             white-space: nowrap;
         }
         .cdp-copy-hint {
+            grid-area: copy-hint;
             font-size: 11px;
             color: var(--cdp-text-muted);
+            white-space: nowrap;
         }
 
         /* ----- TABS ----- */
@@ -858,16 +928,21 @@
             right: 24px;
             width: 46px;
             height: 46px;
+            box-sizing: border-box;
             border-radius: var(--cdp-radius);
             border: 1px solid var(--cdp-border);
             background: var(--cdp-bg-card);
             color: var(--cdp-text-primary);
             cursor: pointer;
-            z-index: 2147483646;
+            z-index: 2147483647;
             box-shadow: 0 8px 22px rgba(1,4,9,0.34);
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: right 0.22s ease, var(--cdp-transition);
+        }
+        #cdp-toggle-btn.cdp-sidebar-open {
+            right: calc(var(--cdp-sidebar-width) + 12px);
         }
         #cdp-toggle-btn:hover,
         #cdp-toggle-btn.cdp-detecting {
@@ -998,26 +1073,6 @@
             outline: 2px solid var(--cdp-primary) !important;
             outline-offset: 2px !important;
         }
-        #cdp-toast {
-            position: fixed;
-            bottom: 84px;
-            right: 24px;
-            padding: 8px 12px;
-            background: var(--cdp-bg-card);
-            border: 1px solid var(--cdp-border);
-            border-radius: var(--cdp-radius);
-            color: var(--cdp-text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 12px;
-            font-weight: 600;
-            z-index: 2147483647;
-            pointer-events: none;
-            opacity: 0;
-            box-shadow: 0 8px 22px rgba(1,4,9,0.34);
-        }
-        #cdp-toast.cdp-toast-show {
-            opacity: 1;
-        }
         .cdp-loading-spinner {
             width: 28px;
             height: 28px;
@@ -1049,6 +1104,58 @@
             position: sticky;
             top: 0;
             z-index: 5;
+        }
+
+        @media (max-width: 519px) {
+            #cdp-title {
+                display: none;
+            }
+            #cdp-color-preview-area {
+                flex-direction: column;
+            }
+            #cdp-big-swatch {
+                width: 100%;
+                height: 64px;
+                box-sizing: border-box;
+            }
+            .cdp-assets-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+            .cdp-site-color-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 399px) {
+            #cdp-header-notification {
+                flex-basis: 90px;
+            }
+            #cdp-color-info {
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-areas:
+                    'name'
+                    'hex'
+                    'rgb'
+                    'hsl'
+                    'contrast-white'
+                    'contrast-black'
+                    'copy-hint';
+                row-gap: 3px;
+            }
+            .cdp-contrast-row {
+                justify-content: flex-start;
+            }
+            #cdp-footer-right {
+                display: none;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #cdp-panel,
+            #cdp-panel.cdp-hidden,
+            #cdp-toggle-btn {
+                transition: none;
+            }
         }
     `);
     /* ===== UTILITIES ===== */
@@ -1140,28 +1247,6 @@
         if (isValidTabName(tabName)) {
             safeSetValue(STORAGE_KEYS.activeTab, tabName);
         }
-    }
-
-    function savePanelPosition(panel) {
-        const rect = panel.getBoundingClientRect();
-        writeJsonValue(STORAGE_KEYS.panelPosition, {
-            left: Math.round(rect.left),
-            top: Math.round(rect.top),
-        });
-    }
-
-    function restorePanelPosition(panel) {
-        const pos = readJsonValue(STORAGE_KEYS.panelPosition, null);
-        if (!pos) return;
-        const left = Number(pos.left);
-        const top = Number(pos.top);
-        if (!Number.isFinite(left) || !Number.isFinite(top)) {
-            logError('restorePanelPosition', new Error('Invalid stored panel position'));
-            return;
-        }
-        panel.style.left = Math.max(4, left) + 'px';
-        panel.style.top = Math.max(4, top) + 'px';
-        panel.style.right = 'auto';
     }
 
     function normalizeStoredHistoryItem(item) {
@@ -1346,19 +1431,25 @@
             .toUpperCase();
     }
 
-    // Timer disimpan agar toast beruntun tidak saling menutup lebih cepat
-    // (timeout milik toast lama tidak boleh menyembunyikan toast baru).
-    let toastTimer = null;
+    function showNotification(message, type = 'info') {
+        const notification = document.getElementById('cdp-header-notification');
+        const text = document.getElementById('cdp-header-notification-text');
+        if (!notification || !text) return;
 
-    function showToast(msg) {
-        const t = document.getElementById('cdp-toast');
-        t.textContent = msg;
-        t.classList.add('cdp-toast-show');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => t.classList.remove('cdp-toast-show'), 2000);
+        const normalizedType = type === 'success' || type === 'error' ? type : 'info';
+        notification.className = `cdp-notification-${normalizedType} cdp-notification-visible`;
+        notification.setAttribute('role', normalizedType === 'error' ? 'alert' : 'status');
+        notification.setAttribute('aria-live', normalizedType === 'error' ? 'assertive' : 'polite');
+        text.textContent = String(message);
+
+        clearTimeout(notificationTimer);
+        notificationTimer = setTimeout(() => {
+            notification.classList.remove('cdp-notification-visible');
+            notificationTimer = null;
+        }, 2200);
     }
 
-    function copyToClipboardFallback(text, clipboardErr) {
+    function copyToClipboardFallback(text, clipboardErr, successMessage) {
         let ta = null;
         try {
             ta = document.createElement('textarea');
@@ -1367,25 +1458,25 @@
             if (!document.execCommand('copy')) {
                 throw new Error('document.execCommand returned false');
             }
-            showToast('Copied: ' + text);
+            showNotification(successMessage, 'success');
         } catch (fallbackErr) {
             logError('copyToClipboard fallback', { clipboardErr, fallbackErr });
-            showToast('Copy failed');
+            showNotification('Copy failed', 'error');
         } finally {
             if (ta && ta.parentNode) ta.parentNode.removeChild(ta);
         }
     }
 
-    function copyToClipboard(text) {
+    function copyToClipboard(text, successMessage = 'Copied') {
         if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
-            copyToClipboardFallback(text, new Error('Clipboard API is not available'));
+            copyToClipboardFallback(text, new Error('Clipboard API is not available'), successMessage);
             return;
         }
         navigator.clipboard.writeText(text).then(() => {
-            showToast('Copied: ' + text);
+            showNotification(successMessage, 'success');
         }).catch((clipboardErr) => {
             logError('copyToClipboard clipboard API', clipboardErr);
-            copyToClipboardFallback(text, clipboardErr);
+            copyToClipboardFallback(text, clipboardErr, successMessage);
         });
     }
 
@@ -1393,8 +1484,7 @@
     function isCdpElement(el) {
         return !!(el && typeof el.closest === 'function' &&
             (el.closest('#cdp-panel') || el.closest('#cdp-toggle-btn') ||
-            el.closest('#cdp-cursor-tooltip') || el.closest('#cdp-toast') ||
-            el.closest('#cdp-asset-action-popover')));
+            el.closest('#cdp-cursor-tooltip') || el.closest('#cdp-asset-action-popover')));
     }
 
     function isDataUri(value) {
@@ -1928,15 +2018,15 @@
     async function copyAssetSvgCode(asset) {
         try {
             if (!assetCanCopySvg(asset)) {
-                showToast('SVG code unavailable');
+                showNotification('SVG unavailable', 'error');
                 return;
             }
             const svgCode = await assetSvgCode(asset);
             if (!svgCode) throw new Error('SVG code is empty');
-            copyToClipboard(svgCode);
+            copyToClipboard(svgCode, 'SVG copied');
         } catch (err) {
             logError('copyAssetSvgCode', err);
-            showToast('Copy SVG failed');
+            showNotification('SVG copy failed', 'error');
         }
     }
 
@@ -2001,10 +2091,10 @@
         try {
             const url = await assetDownloadUrl(asset);
             await gmDownload(url, assetFilename(asset));
-            showToast('Downloaded: ' + assetFilename(asset));
+            showNotification('Download complete', 'success');
         } catch (err) {
             logError('downloadAsset', err);
-            showToast('Download failed');
+            showNotification('Download failed', 'error');
             throw err;
         }
     }
@@ -2085,10 +2175,10 @@
             for (const asset of pageAssets) {
                 await fetchAssetHeadMeta(asset);
             }
-            showToast(pageAssets.length + ' assets found');
+            showNotification(pageAssets.length + ' assets found', 'success');
         } catch (err) {
             logError('scanPageAssets', err);
-            showToast('Asset scan failed');
+            showNotification('Asset scan failed', 'error');
         } finally {
             isScanningAssets = false;
             if (activeTab === 'assets') renderCurrentTab();
@@ -2365,39 +2455,15 @@
                 limitReached: elements.length > limit,
                 scannedAt: new Date().toLocaleTimeString(),
             };
-            showToast('Site info scan complete');
+            showNotification('Site scan complete', 'success');
         } catch (err) {
             logError('scanSiteInfo', err);
-            showToast('Site info scan failed');
+            showNotification('Site scan failed', 'error');
         } finally {
             isScanningSiteInfo = false;
             if (activeTab === 'site-info') renderCurrentTab();
         }
     }
-    /* ===== CLAMP — keeps panel inside viewport ===== */
-    function clampPanel(panel) {
-        const rect = panel.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const margin = 4;
-
-        let left = rect.left;
-        let top = rect.top;
-
-        // right edge
-        if (left + rect.width > vw - margin) left = vw - rect.width - margin;
-        // left edge
-        if (left < margin) left = margin;
-        // bottom edge
-        if (top + rect.height > vh - margin) top = vh - rect.height - margin;
-        // top edge
-        if (top < margin) top = margin;
-
-        panel.style.left = left + 'px';
-        panel.style.top = top + 'px';
-        panel.style.right = 'auto';
-    }
-
     /* ===== BUILD UI ===== */
 
     const ICON_PIPETTE =
@@ -2415,14 +2481,13 @@
         // Toggle Button
         const toggleBtn = document.createElement('button');
         toggleBtn.id = 'cdp-toggle-btn';
+        toggleBtn.type = 'button';
         toggleBtn.innerHTML = pipetteIcon(24);
-        toggleBtn.title = 'Color Detector Pro (Alt+C)';
+        toggleBtn.title = 'Show Color Detector Pro (Alt+C)';
+        toggleBtn.setAttribute('aria-label', 'Show Color Detector Pro');
+        toggleBtn.setAttribute('aria-controls', 'cdp-panel');
+        toggleBtn.setAttribute('aria-expanded', 'false');
         document.body.appendChild(toggleBtn);
-
-        // Toast
-        const toast = document.createElement('div');
-        toast.id = 'cdp-toast';
-        document.body.appendChild(toast);
 
         // Cursor Tooltip
         const tooltip = document.createElement('div');
@@ -2439,16 +2504,24 @@
         const panel = document.createElement('div');
         panel.id = 'cdp-panel';
         panel.classList.add('cdp-hidden');
+        panel.setAttribute('aria-hidden', 'true');
         panel.innerHTML = `
             <div id="cdp-header">
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.7</span>
+                    <span id="cdp-version">v2.8.0</span>
+                    <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
+                        <span id="cdp-header-notification-icon" aria-hidden="true">
+                            <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
+                            <svg class="cdp-notification-icon-error" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                            <svg class="cdp-notification-icon-info" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                        </span>
+                        <span id="cdp-header-notification-text"></span>
+                    </div>
                 </div>
                 <div id="cdp-header-actions">
-                    <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
-                    <button class="cdp-header-btn" id="cdp-btn-close" title="Close Panel">&times;</button>
+                    <button class="cdp-header-btn" id="cdp-btn-close" type="button" title="Hide sidebar" aria-label="Hide sidebar">&times;</button>
                 </div>
             </div>
 
@@ -2637,7 +2710,7 @@
             if (isInspectActive) setInspectActive(false);
             if (isDetecting) setDetecting(false);
             hideAssetActionPopover();
-            showToast('Asset Picker active');
+            showNotification('Asset Picker active', 'info');
             return;
         }
         hideAssetActionPopover();
@@ -2663,7 +2736,7 @@
             if (isDetecting) setDetecting(false);
             isInspectFrozen = false;
             hideInspectCard();
-            showToast('Inspect mode active');
+            showNotification('Inspect mode active', 'info');
             return;
         }
         isInspectFrozen = false;
@@ -2686,17 +2759,22 @@
     }
 
     function setPanelOpen(panel, open) {
-        isPanelOpen = open;
+        const toggleBtn = document.getElementById('cdp-toggle-btn');
+        isPanelOpen = Boolean(open);
         panel.classList.toggle('cdp-hidden', !isPanelOpen);
-        if (isPanelOpen) {
-            requestAnimationFrame(guard('clampPanel after open', () => clampPanel(panel)));
+        panel.setAttribute('aria-hidden', String(!isPanelOpen));
+        toggleBtn.classList.toggle('cdp-sidebar-open', isPanelOpen);
+        toggleBtn.setAttribute('aria-expanded', String(isPanelOpen));
+        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro');
+        toggleBtn.title = isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro';
+        if (!isPanelOpen && panel.contains(document.activeElement)) {
+            toggleBtn.focus();
         }
     }
 
-    function restoreUiState(panel) {
+    function restoreUiState() {
         detectionHistory = loadStoredHistory();
         updateHistoryBadge();
-        restorePanelPosition(panel);
         const storedTab = loadStoredActiveTab();
         selectTab(storedTab, false, storedTab !== 'database');
         setDetectionMode(browserSupportsEyeDropper()
@@ -2710,7 +2788,6 @@
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
         const closeBtn = document.getElementById('cdp-btn-close');
-        const minBtn = document.getElementById('cdp-btn-minimize');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
@@ -2720,7 +2797,7 @@
         const tabs = document.querySelectorAll('.cdp-tab');
         const detDisp = document.getElementById('cdp-detector-display');
 
-        restoreUiState(panel);
+        restoreUiState();
 
         // Toggle
         toggleBtn.addEventListener('click', () => {
@@ -2730,13 +2807,6 @@
         // Close
         closeBtn.addEventListener('click', () => {
             setPanelOpen(panel, false);
-        });
-
-        // Minimize
-        minBtn.addEventListener('click', () => {
-            isPanelMinimized = !isPanelMinimized;
-            panel.classList.toggle('cdp-minimized', isPanelMinimized);
-            minBtn.innerHTML = isPanelMinimized ? '▢' : '─';
         });
 
         // Detect
@@ -2752,13 +2822,13 @@
         modeBtn.addEventListener('click', () => {
             if (!browserSupportsEyeDropper()) {
                 setDetectionMode(DETECTION_MODE_COMPUTED);
-                showToast('Pixel mode is not supported here');
+                showNotification('Pixel unavailable', 'error');
                 return;
             }
             setDetectionMode(detectionMode === DETECTION_MODE_EYEDROPPER
                 ? DETECTION_MODE_COMPUTED
                 : DETECTION_MODE_EYEDROPPER);
-            showToast('Detection mode: ' + (detectionMode === DETECTION_MODE_EYEDROPPER ? 'Pixel' : 'Style'));
+            showNotification('Mode: ' + (detectionMode === DETECTION_MODE_EYEDROPPER ? 'Pixel' : 'Style'), 'info');
         });
 
         // Asset Picker
@@ -2787,7 +2857,7 @@
             updateHistoryBadge();
             saveDetectionHistory();
             renderCurrentTab();
-            showToast('History cleared');
+            showNotification('History cleared', 'success');
         });
 
         // Copy on click
@@ -2831,17 +2901,6 @@
                 setInspectActive(false);
             }
         }));
-
-        // Viewport resize — re-clamp
-        window.addEventListener('resize', guard('window resize', () => {
-            if (isPanelOpen) {
-                clampPanel(panel);
-                savePanelPosition(panel);
-            }
-        }));
-
-        // Draggable with grab cursor + boundary clamping
-        makeDraggable(panel, document.getElementById('cdp-header'));
     }
 
     /* ===== MOUSE DETECTION ===== */
@@ -2882,7 +2941,7 @@
         if (!browserSupportsEyeDropper()) {
             setDetectionMode(DETECTION_MODE_COMPUTED);
             setDetecting(true);
-            showToast('Pixel mode unavailable; using style mode');
+            showNotification('Using Style mode', 'info');
             return;
         }
 
@@ -2900,9 +2959,9 @@
         } catch (err) {
             logError('startEyeDropperDetection', err);
             if (err && err.name === 'AbortError') {
-                showToast('Pixel selection canceled');
+                showNotification('Selection canceled', 'info');
             } else {
-                showToast('Pixel mode failed; using style mode');
+                showNotification('Pixel mode failed', 'error');
                 setDetectionMode(DETECTION_MODE_COMPUTED);
                 setDetecting(true);
                 keepComputedModeActive = true;
@@ -3044,15 +3103,15 @@
         const data = inspectDataFromElement(target);
         isInspectFrozen = true;
         renderInspectCard(data, clientX, clientY, true);
-        showToast('Inspect card pinned');
+        showNotification('Inspector pinned', 'info');
     }
 
     function copyCurrentInspectCss() {
         if (!currentInspectData) {
-            showToast('Nothing to copy');
+            showNotification('Nothing to copy', 'error');
             return;
         }
-        copyToClipboard(currentInspectData.cssText);
+        copyToClipboard(currentInspectData.cssText, 'CSS copied');
     }
 
     function handleMouseMove(e) {
@@ -3121,61 +3180,6 @@
 
         const record = recordDetectedColor(hex, target.tagName.toLowerCase());
         if (record) copyToClipboard(record.hex);
-    }
-
-    /* ===== DRAG — grab/grabbing cursor + boundary clamp ===== */
-
-    function makeDraggable(element, handle) {
-        let isDragging = false;
-        let startX, startY, initialLeft, initialTop;
-
-        handle.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.cdp-header-btn')) return;
-            isDragging = true;
-            const rect = element.getBoundingClientRect();
-            startX = e.clientX;
-            startY = e.clientY;
-            initialLeft = rect.left;
-            initialTop = rect.top;
-            element.style.transition = 'none';
-            handle.classList.add('cdp-dragging');
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', guard('makeDraggable mousemove', (e) => {
-            if (!isDragging) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-
-            let newLeft = initialLeft + dx;
-            let newTop = initialTop + dy;
-
-            // boundary clamping
-            const rect = element.getBoundingClientRect();
-            const w = rect.width;
-            const h = rect.height;
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
-            const margin = 4;
-
-            if (newLeft < margin) newLeft = margin;
-            if (newTop < margin) newTop = margin;
-            if (newLeft + w > vw - margin) newLeft = vw - w - margin;
-            if (newTop + h > vh - margin) newTop = vh - h - margin;
-
-            element.style.left = newLeft + 'px';
-            element.style.top = newTop + 'px';
-            element.style.right = 'auto';
-        }));
-
-        document.addEventListener('mouseup', guard('makeDraggable mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                element.style.transition = '';
-                handle.classList.remove('cdp-dragging');
-                savePanelPosition(element);
-            }
-        }));
     }
 
     /* ===== RENDER ===== */
@@ -3256,7 +3260,7 @@
                 ? detectionHistory.map(item => ({ name: item.name, hex: item.hex }))
                 : paletteEntries();
             if (entries.length === 0) {
-                showToast('Nothing to export');
+                showNotification('Nothing to export', 'info');
                 return;
             }
 
@@ -3278,10 +3282,10 @@
                 throw new Error('Unsupported export format: ' + format);
             }
 
-            copyToClipboard(text);
+            copyToClipboard(text, 'Export copied');
         } catch (err) {
             logError('exportColors ' + source + ' ' + format, err);
-            showToast('Export failed');
+            showNotification('Export failed', 'error');
         }
     }
 
@@ -3547,7 +3551,7 @@
             selectedBtn.addEventListener('click', () => {
                 const selected = selectedPageAssets(container);
                 if (selected.length === 0) {
-                    showToast('No assets selected');
+                    showNotification('No assets selected', 'info');
                     return;
                 }
                 downloadAssetsSequential(selected);
@@ -3691,7 +3695,7 @@
         });
         container.querySelectorAll('.cdp-token-row').forEach(row => {
             row.addEventListener('click', () => {
-                copyToClipboard(`${row.dataset.tokenName}: ${row.dataset.tokenValue};`);
+                copyToClipboard(`${row.dataset.tokenName}: ${row.dataset.tokenValue};`, 'Token copied');
             });
         });
     }
@@ -3722,10 +3726,10 @@
                 try {
                     const scheme = schemes.find(item => item.key === btn.dataset.harmonyCopy);
                     if (!scheme) throw new Error('Harmony scheme not found: ' + btn.dataset.harmonyCopy);
-                    copyToClipboard(scheme.colors.join('\n'));
+                    copyToClipboard(scheme.colors.join('\n'), 'Scheme copied');
                 } catch (err) {
                     logError('copyHarmonyScheme', err);
-                    showToast('Copy failed');
+                    showNotification('Copy failed', 'error');
                 }
             });
         });

@@ -74,7 +74,7 @@
             if (isInspectActive) setInspectActive(false);
             if (isDetecting) setDetecting(false);
             hideAssetActionPopover();
-            showToast('Asset Picker active');
+            showNotification('Asset Picker active', 'info');
             return;
         }
         hideAssetActionPopover();
@@ -100,7 +100,7 @@
             if (isDetecting) setDetecting(false);
             isInspectFrozen = false;
             hideInspectCard();
-            showToast('Inspect mode active');
+            showNotification('Inspect mode active', 'info');
             return;
         }
         isInspectFrozen = false;
@@ -123,17 +123,22 @@
     }
 
     function setPanelOpen(panel, open) {
-        isPanelOpen = open;
+        const toggleBtn = document.getElementById('cdp-toggle-btn');
+        isPanelOpen = Boolean(open);
         panel.classList.toggle('cdp-hidden', !isPanelOpen);
-        if (isPanelOpen) {
-            requestAnimationFrame(guard('clampPanel after open', () => clampPanel(panel)));
+        panel.setAttribute('aria-hidden', String(!isPanelOpen));
+        toggleBtn.classList.toggle('cdp-sidebar-open', isPanelOpen);
+        toggleBtn.setAttribute('aria-expanded', String(isPanelOpen));
+        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro');
+        toggleBtn.title = isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro';
+        if (!isPanelOpen && panel.contains(document.activeElement)) {
+            toggleBtn.focus();
         }
     }
 
-    function restoreUiState(panel) {
+    function restoreUiState() {
         detectionHistory = loadStoredHistory();
         updateHistoryBadge();
-        restorePanelPosition(panel);
         const storedTab = loadStoredActiveTab();
         selectTab(storedTab, false, storedTab !== 'database');
         setDetectionMode(browserSupportsEyeDropper()
@@ -147,7 +152,6 @@
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
         const closeBtn = document.getElementById('cdp-btn-close');
-        const minBtn = document.getElementById('cdp-btn-minimize');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
@@ -157,7 +161,7 @@
         const tabs = document.querySelectorAll('.cdp-tab');
         const detDisp = document.getElementById('cdp-detector-display');
 
-        restoreUiState(panel);
+        restoreUiState();
 
         // Toggle
         toggleBtn.addEventListener('click', () => {
@@ -167,13 +171,6 @@
         // Close
         closeBtn.addEventListener('click', () => {
             setPanelOpen(panel, false);
-        });
-
-        // Minimize
-        minBtn.addEventListener('click', () => {
-            isPanelMinimized = !isPanelMinimized;
-            panel.classList.toggle('cdp-minimized', isPanelMinimized);
-            minBtn.innerHTML = isPanelMinimized ? '▢' : '─';
         });
 
         // Detect
@@ -189,13 +186,13 @@
         modeBtn.addEventListener('click', () => {
             if (!browserSupportsEyeDropper()) {
                 setDetectionMode(DETECTION_MODE_COMPUTED);
-                showToast('Pixel mode is not supported here');
+                showNotification('Pixel unavailable', 'error');
                 return;
             }
             setDetectionMode(detectionMode === DETECTION_MODE_EYEDROPPER
                 ? DETECTION_MODE_COMPUTED
                 : DETECTION_MODE_EYEDROPPER);
-            showToast('Detection mode: ' + (detectionMode === DETECTION_MODE_EYEDROPPER ? 'Pixel' : 'Style'));
+            showNotification('Mode: ' + (detectionMode === DETECTION_MODE_EYEDROPPER ? 'Pixel' : 'Style'), 'info');
         });
 
         // Asset Picker
@@ -224,7 +221,7 @@
             updateHistoryBadge();
             saveDetectionHistory();
             renderCurrentTab();
-            showToast('History cleared');
+            showNotification('History cleared', 'success');
         });
 
         // Copy on click
@@ -268,16 +265,5 @@
                 setInspectActive(false);
             }
         }));
-
-        // Viewport resize — re-clamp
-        window.addEventListener('resize', guard('window resize', () => {
-            if (isPanelOpen) {
-                clampPanel(panel);
-                savePanelPosition(panel);
-            }
-        }));
-
-        // Draggable with grab cursor + boundary clamping
-        makeDraggable(panel, document.getElementById('cdp-header'));
     }
 

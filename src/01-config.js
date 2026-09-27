@@ -23,7 +23,6 @@
     ]);
     const STORAGE_KEYS = Object.freeze({
         history: 'cdp_detection_history',
-        panelPosition: 'cdp_panel_position',
         activeTab: 'cdp_active_tab',
         colorCache: 'cdp_color_database_cache',
     });
@@ -63,7 +62,6 @@
     let colorDatabase = [];
     let isPanelOpen = false;
     let isDetecting = false;
-    let isPanelMinimized = false;
     let currentHighlight = null;
     let detectionHistory = [];
     let activeTab = 'database';
@@ -89,3 +87,4 @@
         scannedAt: null,
     };
     let isScanningSiteInfo = false;
+    let notificationTimer = null;
