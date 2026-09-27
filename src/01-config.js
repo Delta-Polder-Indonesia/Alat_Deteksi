@@ -5,6 +5,8 @@
     const DETECTION_MODE_COMPUTED = 'computed';
     const MAX_HISTORY_ITEMS = 50;
     const COLOR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+    const ASSET_FETCH_TIMEOUT_MS = 15000;
+    const ASSET_DOWNLOAD_TIMEOUT_MS = 45000;
     const STORAGE_KEYS = Object.freeze({
         history: 'cdp_detection_history',
         panelPosition: 'cdp_panel_position',
@@ -53,3 +55,9 @@
     let activeTab = 'database';
     let detectionMode = DETECTION_MODE_COMPUTED;
     let isEyeDropperOpen = false;
+    let isAssetPickerActive = false;
+    let currentAssetHighlight = null;
+    let currentPickedAsset = null;
+    let pageAssets = [];
+    let isScanningAssets = false;
+    let isDownloadingAssets = false;

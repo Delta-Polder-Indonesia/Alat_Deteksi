@@ -175,7 +175,8 @@
             color: #fff;
             animation: cdp-pulse 2s infinite;
         }
-        #cdp-mode-btn {
+        #cdp-mode-btn,
+        #cdp-asset-btn {
             min-width: 68px;
             padding: 10px 12px;
             border: 1px solid var(--cdp-border);
@@ -185,7 +186,11 @@
             font-family: inherit; font-size: 12px; font-weight: 700;
             cursor: pointer; transition: var(--cdp-transition);
         }
-        #cdp-mode-btn:hover {
+        #cdp-asset-btn {
+            min-width: 96px;
+        }
+        #cdp-mode-btn:hover,
+        #cdp-asset-btn:hover {
             border-color: var(--cdp-primary);
             color: var(--cdp-text-primary);
         }
@@ -198,6 +203,12 @@
             background: rgba(102,126,234,0.08);
             border-color: var(--cdp-border);
             color: var(--cdp-text-secondary);
+        }
+        #cdp-asset-btn.cdp-active {
+            background: rgba(72,187,120,0.12);
+            border-color: rgba(72,187,120,0.35);
+            color: var(--cdp-success);
+            animation: cdp-pulse 2s infinite;
         }
         #cdp-clear-btn {
             padding: 10px 14px;
@@ -441,6 +452,121 @@
             letter-spacing: 1px;
         }
 
+        /* ----- ASSETS ----- */
+        .cdp-assets-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: rgba(102,126,234,0.04);
+            border-bottom: 1px solid var(--cdp-border);
+            flex-wrap: wrap;
+        }
+        .cdp-assets-action {
+            padding: 7px 10px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 8px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--cdp-transition);
+        }
+        .cdp-assets-action:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+            background: rgba(102,126,234,0.16);
+        }
+        .cdp-assets-action:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .cdp-assets-count {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            margin-left: auto;
+        }
+        .cdp-assets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            padding: 12px 18px 18px;
+        }
+        .cdp-asset-card {
+            border: 1px solid var(--cdp-border);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            overflow: hidden;
+        }
+        .cdp-asset-thumb {
+            height: 112px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: repeating-conic-gradient(rgba(255,255,255,0.08) 0% 25%, transparent 0% 50%) 50% / 18px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .cdp-asset-thumb img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .cdp-asset-thumb-placeholder {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .cdp-asset-card-body {
+            padding: 10px;
+        }
+        .cdp-asset-check-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .cdp-asset-check-row input {
+            accent-color: var(--cdp-primary);
+        }
+        .cdp-asset-name {
+            color: var(--cdp-text-primary);
+            font-size: 12px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .cdp-asset-meta {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        .cdp-asset-card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .cdp-asset-small-btn {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 7px;
+            background: transparent;
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .cdp-asset-small-btn:hover {
+            color: var(--cdp-text-primary);
+            border-color: var(--cdp-primary);
+        }
+
         /* ----- COLOR LIST ----- */
         #cdp-color-list-container {
             flex: 1; overflow-y: auto; min-height: 0;
@@ -570,9 +696,77 @@
             width: 28px; height: 28px; border-radius: 6px;
             border: 2px solid rgba(255,255,255,0.15); flex-shrink: 0;
         }
+        #cdp-tooltip-swatch.cdp-asset-tooltip-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(102,126,234,0.16);
+            color: var(--cdp-text-primary);
+            font-size: 8px;
+            font-weight: 800;
+            font-family: 'SF Mono', monospace;
+            letter-spacing: 0.3px;
+        }
         #cdp-tooltip-info { display: flex; flex-direction: column; }
         #cdp-tooltip-name { font-size: 12px; font-weight: 600; color: #fff; }
         #cdp-tooltip-hex { font-size: 11px; color: var(--cdp-text-muted); font-family: monospace; }
+
+        /* ----- ASSET ACTIONS ----- */
+        #cdp-asset-action-popover {
+            position: fixed;
+            min-width: 190px;
+            padding: 12px;
+            background: rgba(15,15,35,0.98);
+            border: 1px solid var(--cdp-border);
+            border-radius: 12px;
+            z-index: 2147483647;
+            box-shadow: 0 10px 36px rgba(0,0,0,0.45);
+            font-family: 'Inter', sans-serif;
+            color: var(--cdp-text-primary);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        #cdp-asset-action-popover.cdp-hidden {
+            display: none;
+        }
+        #cdp-asset-action-title {
+            font-size: 12px;
+            font-weight: 700;
+        }
+        #cdp-asset-action-meta {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            word-break: break-word;
+        }
+        #cdp-asset-copy-svg-btn,
+        #cdp-asset-download-btn {
+            padding: 8px 10px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 8px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--cdp-transition);
+        }
+        #cdp-asset-copy-svg-btn:hover,
+        #cdp-asset-download-btn:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+            background: rgba(102,126,234,0.16);
+        }
+        #cdp-asset-copy-svg-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        #cdp-asset-copy-svg-btn:disabled:hover {
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-secondary);
+            background: rgba(102,126,234,0.08);
+        }
 
         /* ----- HIGHLIGHT ----- */
         .cdp-element-highlight {

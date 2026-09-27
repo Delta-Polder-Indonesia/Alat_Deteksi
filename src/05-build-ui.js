@@ -44,7 +44,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.4</span>
+                    <span id="cdp-version">v2.5</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
@@ -58,6 +58,7 @@
                     <span id="cdp-detect-label">Start Color Detection</span>
                 </button>
                 <button id="cdp-mode-btn" type="button" title="Toggle detection mode">Mode</button>
+                <button id="cdp-asset-btn" type="button" class="cdp-inactive" title="Pick page assets">Asset Picker</button>
                 <button id="cdp-clear-btn" title="Clear History">Clear</button>
             </div>
 
@@ -101,6 +102,9 @@
                 <button class="cdp-tab" data-tab="harmony">
                     Harmony
                 </button>
+                <button class="cdp-tab" data-tab="assets">
+                    Assets
+                </button>
             </div>
 
             <div id="cdp-search-box">
@@ -124,6 +128,16 @@
                 </div>
             </div>`;
         document.body.appendChild(panel);
+
+        const assetActions = document.createElement('div');
+        assetActions.id = 'cdp-asset-action-popover';
+        assetActions.className = 'cdp-hidden';
+        assetActions.innerHTML = `
+            <div id="cdp-asset-action-title">Asset actions</div>
+            <div id="cdp-asset-action-meta"></div>
+            <button id="cdp-asset-copy-svg-btn" type="button">Copy SVG code</button>
+            <button id="cdp-asset-download-btn" type="button">Download</button>`;
+        document.body.appendChild(assetActions);
 
         setupEventListeners();
     }

@@ -6,6 +6,7 @@
         else if (tab === 'history') renderHistory();
         else if (tab === 'palette') renderPalette();
         else if (tab === 'harmony') renderHarmony();
+        else if (tab === 'assets') renderAssets();
     }
 
     function updatePreview(hex, name) {
@@ -283,6 +284,117 @@
         });
         container.innerHTML = html;
         attachHarmonyHandlers(container, schemes);
+    }
+
+    function selectedPageAssets(container) {
+        const selectedIds = new Set();
+        container.querySelectorAll('.cdp-asset-select:checked').forEach(input => {
+            selectedIds.add(input.dataset.assetId);
+        });
+        pageAssets.forEach(asset => {
+            asset.selected = selectedIds.has(asset.id);
+        });
+        return pageAssets.filter(asset => asset.selected);
+    }
+
+    function renderAssetThumbnail(asset) {
+        if (asset.thumbnailUrl) {
+            return `<img src="${escapeHtml(asset.thumbnailUrl)}" alt="${escapeHtml(asset.name)}">`;
+        }
+        return `<div class="cdp-asset-thumb-placeholder">${escapeHtml(asset.badge || 'Asset')}</div>`;
+    }
+
+    function renderAssets() {
+        const container = document.getElementById('cdp-color-list-container');
+        const scanLabel = isScanningAssets ? 'Scanning...' : 'Scan Page';
+        const disabled = isScanningAssets || isDownloadingAssets ? ' disabled' : '';
+        let html = `
+            <div class="cdp-assets-toolbar">
+                <button class="cdp-assets-action" id="cdp-scan-assets-btn" type="button"${disabled}>${scanLabel}</button>
+                <button class="cdp-assets-action" id="cdp-download-selected-assets-btn" type="button"${disabled}>Download Selected</button>
+                <button class="cdp-assets-action" id="cdp-download-all-assets-btn" type="button"${disabled}>Download All</button>
+                <span class="cdp-assets-count">${pageAssets.length} assets</span>
+            </div>`;
+
+        if (isScanningAssets) {
+            html += '<div class="cdp-loading-spinner"></div>';
+        } else if (pageAssets.length === 0) {
+            html += `
+                <div class="cdp-empty-state">
+                    <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 14l2.5-3 2 2.5L15 10l3 4"/></svg></div>
+                    <div class="cdp-empty-state-text">Scan the page to collect SVG and image assets.</div>
+                </div>`;
+        } else {
+            html += '<div class="cdp-assets-grid">';
+            pageAssets.forEach(asset => {
+                const checked = asset.selected ? ' checked' : '';
+                const copyDisabled = assetCanCopySvg(asset) ? '' : ' disabled';
+                html += `
+                    <div class="cdp-asset-card" data-asset-id="${escapeHtml(asset.id)}">
+                        <div class="cdp-asset-thumb">${renderAssetThumbnail(asset)}</div>
+                        <div class="cdp-asset-card-body">
+                            <label class="cdp-asset-check-row">
+                                <input type="checkbox" class="cdp-asset-select" data-asset-id="${escapeHtml(asset.id)}"${checked}>
+                                <span class="cdp-asset-name">${escapeHtml(asset.name)}</span>
+                            </label>
+                            <div class="cdp-asset-meta">${escapeHtml(asset.typeLabel)}</div>
+                            <div class="cdp-asset-meta">${escapeHtml(asset.dimensions)} - ${escapeHtml(asset.sizeLabel)}</div>
+                            <div class="cdp-asset-card-actions">
+                                <button class="cdp-asset-small-btn cdp-asset-copy-svg" data-asset-id="${escapeHtml(asset.id)}" type="button"${copyDisabled}>Copy SVG</button>
+                                <button class="cdp-asset-small-btn cdp-asset-download-one" data-asset-id="${escapeHtml(asset.id)}" type="button">Download</button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
+        attachAssetTabHandlers(container);
+    }
+
+    function attachAssetTabHandlers(container) {
+        const scanBtn = document.getElementById('cdp-scan-assets-btn');
+        const selectedBtn = document.getElementById('cdp-download-selected-assets-btn');
+        const allBtn = document.getElementById('cdp-download-all-assets-btn');
+        if (scanBtn) {
+            scanBtn.addEventListener('click', () => {
+                scanPageAssets();
+            });
+        }
+        if (selectedBtn) {
+            selectedBtn.addEventListener('click', () => {
+                const selected = selectedPageAssets(container);
+                if (selected.length === 0) {
+                    showToast('No assets selected');
+                    return;
+                }
+                downloadAssetsSequential(selected);
+            });
+        }
+        if (allBtn) {
+            allBtn.addEventListener('click', () => {
+                downloadAssetsSequential(pageAssets);
+            });
+        }
+        container.querySelectorAll('.cdp-asset-select').forEach(input => {
+            input.addEventListener('change', () => {
+                const asset = pageAssets.find(item => item.id === input.dataset.assetId);
+                if (asset) asset.selected = input.checked;
+            });
+        });
+        container.querySelectorAll('.cdp-asset-copy-svg').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const asset = pageAssets.find(item => item.id === btn.dataset.assetId);
+                if (asset) copyAssetSvgCode(asset);
+            });
+        });
+        container.querySelectorAll('.cdp-asset-download-one').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const asset = pageAssets.find(item => item.id === btn.dataset.assetId);
+                if (asset) downloadAsset(asset).catch(err => logError('download asset card', err));
+            });
+        });
     }
 
     function attachExportHandlers(container) {

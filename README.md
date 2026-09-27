@@ -22,6 +22,10 @@ ada di [SKILL.md](SKILL.md).
 - Preview warna menampilkan rasio kontras WCAG terhadap putih dan hitam.
 - Tab Harmony membuat skema complementary, analogous, triadic, dan
   monochromatic dari warna terakhir yang terdeteksi.
+- Mode Asset Picker membantu mengambil SVG, gambar, background image,
+  sprite, data URI, dan poster video dari halaman sebagai referensi desain.
+- Tab Assets memindai halaman, menampilkan galeri aset, dan mengunduh aset
+  terpilih atau semua aset secara berurutan.
 
 ## Alur Kerja
 

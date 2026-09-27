@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/JD-YH03D/release
-// @version      2.4.0
+// @version      2.5.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -10,7 +10,9 @@
 // @grant        GM_addStyle
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_download
 // @connect      api.npoint.io
+// @connect      *
 // @run-at       document-idle
 // @icon         https://raw.githubusercontent.com/JD-YH03D/BintangToba/main/icon.svg
 // @updateURL    https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/dist/ColorDetektor.user.js
@@ -27,6 +29,8 @@
     const DETECTION_MODE_COMPUTED = 'computed';
     const MAX_HISTORY_ITEMS = 50;
     const COLOR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+    const ASSET_FETCH_TIMEOUT_MS = 15000;
+    const ASSET_DOWNLOAD_TIMEOUT_MS = 45000;
     const STORAGE_KEYS = Object.freeze({
         history: 'cdp_detection_history',
         panelPosition: 'cdp_panel_position',
@@ -75,6 +79,12 @@
     let activeTab = 'database';
     let detectionMode = DETECTION_MODE_COMPUTED;
     let isEyeDropperOpen = false;
+    let isAssetPickerActive = false;
+    let currentAssetHighlight = null;
+    let currentPickedAsset = null;
+    let pageAssets = [];
+    let isScanningAssets = false;
+    let isDownloadingAssets = false;
     /* ===== STYLES ===== */
     GM_addStyle(`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -252,7 +262,8 @@
             color: #fff;
             animation: cdp-pulse 2s infinite;
         }
-        #cdp-mode-btn {
+        #cdp-mode-btn,
+        #cdp-asset-btn {
             min-width: 68px;
             padding: 10px 12px;
             border: 1px solid var(--cdp-border);
@@ -262,7 +273,11 @@
             font-family: inherit; font-size: 12px; font-weight: 700;
             cursor: pointer; transition: var(--cdp-transition);
         }
-        #cdp-mode-btn:hover {
+        #cdp-asset-btn {
+            min-width: 96px;
+        }
+        #cdp-mode-btn:hover,
+        #cdp-asset-btn:hover {
             border-color: var(--cdp-primary);
             color: var(--cdp-text-primary);
         }
@@ -275,6 +290,12 @@
             background: rgba(102,126,234,0.08);
             border-color: var(--cdp-border);
             color: var(--cdp-text-secondary);
+        }
+        #cdp-asset-btn.cdp-active {
+            background: rgba(72,187,120,0.12);
+            border-color: rgba(72,187,120,0.35);
+            color: var(--cdp-success);
+            animation: cdp-pulse 2s infinite;
         }
         #cdp-clear-btn {
             padding: 10px 14px;
@@ -518,6 +539,121 @@
             letter-spacing: 1px;
         }
 
+        /* ----- ASSETS ----- */
+        .cdp-assets-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: rgba(102,126,234,0.04);
+            border-bottom: 1px solid var(--cdp-border);
+            flex-wrap: wrap;
+        }
+        .cdp-assets-action {
+            padding: 7px 10px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 8px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--cdp-transition);
+        }
+        .cdp-assets-action:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+            background: rgba(102,126,234,0.16);
+        }
+        .cdp-assets-action:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .cdp-assets-count {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            margin-left: auto;
+        }
+        .cdp-assets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            padding: 12px 18px 18px;
+        }
+        .cdp-asset-card {
+            border: 1px solid var(--cdp-border);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            overflow: hidden;
+        }
+        .cdp-asset-thumb {
+            height: 112px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: repeating-conic-gradient(rgba(255,255,255,0.08) 0% 25%, transparent 0% 50%) 50% / 18px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .cdp-asset-thumb img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .cdp-asset-thumb-placeholder {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .cdp-asset-card-body {
+            padding: 10px;
+        }
+        .cdp-asset-check-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .cdp-asset-check-row input {
+            accent-color: var(--cdp-primary);
+        }
+        .cdp-asset-name {
+            color: var(--cdp-text-primary);
+            font-size: 12px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .cdp-asset-meta {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        .cdp-asset-card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .cdp-asset-small-btn {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 7px;
+            background: transparent;
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .cdp-asset-small-btn:hover {
+            color: var(--cdp-text-primary);
+            border-color: var(--cdp-primary);
+        }
+
         /* ----- COLOR LIST ----- */
         #cdp-color-list-container {
             flex: 1; overflow-y: auto; min-height: 0;
@@ -647,9 +783,77 @@
             width: 28px; height: 28px; border-radius: 6px;
             border: 2px solid rgba(255,255,255,0.15); flex-shrink: 0;
         }
+        #cdp-tooltip-swatch.cdp-asset-tooltip-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(102,126,234,0.16);
+            color: var(--cdp-text-primary);
+            font-size: 8px;
+            font-weight: 800;
+            font-family: 'SF Mono', monospace;
+            letter-spacing: 0.3px;
+        }
         #cdp-tooltip-info { display: flex; flex-direction: column; }
         #cdp-tooltip-name { font-size: 12px; font-weight: 600; color: #fff; }
         #cdp-tooltip-hex { font-size: 11px; color: var(--cdp-text-muted); font-family: monospace; }
+
+        /* ----- ASSET ACTIONS ----- */
+        #cdp-asset-action-popover {
+            position: fixed;
+            min-width: 190px;
+            padding: 12px;
+            background: rgba(15,15,35,0.98);
+            border: 1px solid var(--cdp-border);
+            border-radius: 12px;
+            z-index: 2147483647;
+            box-shadow: 0 10px 36px rgba(0,0,0,0.45);
+            font-family: 'Inter', sans-serif;
+            color: var(--cdp-text-primary);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        #cdp-asset-action-popover.cdp-hidden {
+            display: none;
+        }
+        #cdp-asset-action-title {
+            font-size: 12px;
+            font-weight: 700;
+        }
+        #cdp-asset-action-meta {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            word-break: break-word;
+        }
+        #cdp-asset-copy-svg-btn,
+        #cdp-asset-download-btn {
+            padding: 8px 10px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 8px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--cdp-transition);
+        }
+        #cdp-asset-copy-svg-btn:hover,
+        #cdp-asset-download-btn:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+            background: rgba(102,126,234,0.16);
+        }
+        #cdp-asset-copy-svg-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        #cdp-asset-copy-svg-btn:disabled:hover {
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-secondary);
+            background: rgba(102,126,234,0.08);
+        }
 
         /* ----- HIGHLIGHT ----- */
         .cdp-element-highlight {
@@ -789,7 +993,7 @@
 
     function isValidTabName(tabName) {
         return tabName === 'database' || tabName === 'history' ||
-            tabName === 'palette' || tabName === 'harmony';
+            tabName === 'palette' || tabName === 'harmony' || tabName === 'assets';
     }
 
     function loadStoredActiveTab() {
@@ -1052,6 +1256,711 @@
         });
     }
 
+
+    function isCdpElement(el) {
+        return !!(el && typeof el.closest === 'function' &&
+            (el.closest('#cdp-panel') || el.closest('#cdp-toggle-btn') ||
+            el.closest('#cdp-cursor-tooltip') || el.closest('#cdp-toast') ||
+            el.closest('#cdp-asset-action-popover')));
+    }
+
+    function isDataUri(value) {
+        return typeof value === 'string' && value.trim().toLowerCase().startsWith('data:');
+    }
+
+    function isSvgUrl(value) {
+        if (!value) return false;
+        const raw = String(value).trim().toLowerCase();
+        if (raw.startsWith('data:image/svg+xml')) return true;
+        try {
+            return new URL(raw, document.baseURI).pathname.toLowerCase().endsWith('.svg');
+        } catch (err) {
+            logError('isSvgUrl', err);
+            return raw.includes('.svg');
+        }
+    }
+
+    function absolutizeUrl(value) {
+        if (!value) return '';
+        const trimmed = String(value).trim();
+        if (isDataUri(trimmed)) return trimmed;
+        try {
+            return new URL(trimmed, document.baseURI).href;
+        } catch (err) {
+            logError('absolutizeUrl', err);
+            return trimmed;
+        }
+    }
+
+    function parseSrcset(srcset) {
+        if (!srcset || typeof srcset !== 'string') return [];
+        const trimmed = srcset.trim();
+        const parts = trimmed.toLowerCase().startsWith('data:')
+            ? [trimmed]
+            : trimmed.split(/,(?=\s*\S)/);
+        return parts.map(part => {
+            const tokens = part.trim().split(/\s+/);
+            const url = tokens.shift();
+            if (!url) return null;
+            let score = 1;
+            tokens.forEach(token => {
+                const value = parseFloat(token);
+                if (!Number.isFinite(value)) return;
+                if (token.endsWith('w')) score = Math.max(score, value);
+                else if (token.endsWith('x')) score = Math.max(score, value * 1000);
+            });
+            return { url: absolutizeUrl(url), score };
+        }).filter(Boolean);
+    }
+
+    function bestSrcsetCandidate(srcset) {
+        const candidates = parseSrcset(srcset);
+        if (candidates.length === 0) return '';
+        candidates.sort((a, b) => b.score - a.score);
+        return candidates[0].url;
+    }
+
+    function getBestImageSource(img) {
+        const candidates = [];
+        const picture = img.closest('picture');
+        if (picture) {
+            picture.querySelectorAll('source[srcset]').forEach(source => {
+                if (source.media && window.matchMedia && !window.matchMedia(source.media).matches) return;
+                candidates.push(...parseSrcset(source.getAttribute('srcset')));
+            });
+        }
+        candidates.push(...parseSrcset(img.getAttribute('srcset')));
+        if (img.currentSrc) candidates.push({ url: absolutizeUrl(img.currentSrc), score: 0.5 });
+        if (img.src) candidates.push({ url: absolutizeUrl(img.src), score: 0.1 });
+        if (candidates.length === 0) return '';
+        candidates.sort((a, b) => b.score - a.score);
+        return candidates[0].url;
+    }
+
+    function extractCssUrl(backgroundImage) {
+        if (!backgroundImage || backgroundImage === 'none') return '';
+        const match = /url\((['"]?)(.*?)\1\)/i.exec(backgroundImage);
+        return match ? absolutizeUrl(match[2]) : '';
+    }
+
+    function cleanFilenamePart(value) {
+        return String(value || 'asset')
+            .trim()
+            .replace(/[\\/:*?"<>|]+/g, '-')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+            .slice(0, 80) || 'asset';
+    }
+
+    function dataUriMime(value) {
+        const match = /^data:([^;,]+)/i.exec(String(value || ''));
+        return match ? match[1].toLowerCase() : '';
+    }
+
+    function extensionFromMime(mime) {
+        const normalized = String(mime || '').toLowerCase();
+        if (normalized.includes('svg')) return 'svg';
+        if (normalized.includes('jpeg')) return 'jpg';
+        if (normalized.includes('png')) return 'png';
+        if (normalized.includes('webp')) return 'webp';
+        if (normalized.includes('gif')) return 'gif';
+        if (normalized.includes('avif')) return 'avif';
+        if (normalized.includes('bmp')) return 'bmp';
+        return '';
+    }
+
+    function extensionFromUrl(url) {
+        if (isDataUri(url)) return extensionFromMime(dataUriMime(url));
+        try {
+            const pathname = new URL(url, document.baseURI).pathname;
+            const match = /\.([a-z0-9]{2,5})$/i.exec(pathname);
+            return match ? match[1].toLowerCase() : '';
+        } catch (err) {
+            logError('extensionFromUrl', err);
+            return '';
+        }
+    }
+
+    function assetDefaultExtension(asset) {
+        if (asset.svgCode || asset.kind === 'svg-inline' || asset.kind === 'sprite') return 'svg';
+        return extensionFromUrl(asset.url) || extensionFromMime(asset.mime) || 'png';
+    }
+
+    function assetFilename(asset) {
+        const ext = assetDefaultExtension(asset);
+        const base = cleanFilenamePart(asset.name || asset.typeLabel || 'asset');
+        return base.toLowerCase().endsWith('.' + ext) ? base : `${base}.${ext}`;
+    }
+
+    function bytesToLabel(bytes) {
+        const value = Number(bytes);
+        if (!Number.isFinite(value) || value < 0) return 'Unknown';
+        if (value < 1024) return `${value} B`;
+        if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+        return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function textByteLength(text) {
+        try {
+            if (typeof TextEncoder === 'function') {
+                return new TextEncoder().encode(String(text)).length;
+            }
+        } catch (err) {
+            logError('textByteLength', err);
+        }
+        return String(text).length;
+    }
+
+    function dataUriByteLength(uri) {
+        try {
+            const commaIndex = uri.indexOf(',');
+            if (commaIndex === -1) return uri.length;
+            const header = uri.slice(0, commaIndex).toLowerCase();
+            const data = uri.slice(commaIndex + 1);
+            if (header.includes(';base64')) {
+                return Math.floor(data.replace(/=+$/g, '').length * 3 / 4);
+            }
+            return textByteLength(decodeURIComponent(data));
+        } catch (err) {
+            logError('dataUriByteLength', err);
+            return uri.length;
+        }
+    }
+
+    function dataUriToText(uri) {
+        const commaIndex = uri.indexOf(',');
+        if (commaIndex === -1) return '';
+        const header = uri.slice(0, commaIndex).toLowerCase();
+        const data = uri.slice(commaIndex + 1);
+        try {
+            return header.includes(';base64') ? atob(data) : decodeURIComponent(data);
+        } catch (err) {
+            logError('dataUriToText', err);
+            return '';
+        }
+    }
+
+    function svgDataUrl(svgCode) {
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgCode);
+    }
+
+    function serializeSvgElement(svg) {
+        try {
+            const clone = svg.cloneNode(true);
+            if (!clone.getAttribute('xmlns')) {
+                clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
+            return new XMLSerializer().serializeToString(clone);
+        } catch (err) {
+            logError('serializeSvgElement', err);
+            return '';
+        }
+    }
+
+    function elementLabel(el) {
+        if (!el || typeof el.getAttribute !== 'function') return '';
+        return el.getAttribute('alt') || el.getAttribute('aria-label') ||
+            el.getAttribute('title') || el.id || '';
+    }
+
+    function nameFromUrl(url) {
+        if (!url || isDataUri(url)) return 'asset';
+        try {
+            const pathname = new URL(url, document.baseURI).pathname;
+            const segment = pathname.split('/').filter(Boolean).pop() || 'asset';
+            return decodeURIComponent(segment).replace(/\.[a-z0-9]{2,5}$/i, '') || 'asset';
+        } catch (err) {
+            logError('nameFromUrl', err);
+            return 'asset';
+        }
+    }
+
+    function assetDisplayName(el, url, fallback) {
+        return cleanFilenamePart(elementLabel(el) || nameFromUrl(url) || fallback || 'asset');
+    }
+
+    function getSvgDimensions(svg) {
+        const viewBox = svg.getAttribute('viewBox');
+        if (viewBox) {
+            const parts = viewBox.trim().split(/[\s,]+/).map(Number);
+            if (parts.length === 4 && parts.every(Number.isFinite)) {
+                return `${Math.round(parts[2])} x ${Math.round(parts[3])}`;
+            }
+        }
+        const width = parseFloat(svg.getAttribute('width'));
+        const height = parseFloat(svg.getAttribute('height'));
+        if (Number.isFinite(width) && Number.isFinite(height)) {
+            return `${Math.round(width)} x ${Math.round(height)}`;
+        }
+        const rect = svg.getBoundingClientRect();
+        if (rect.width && rect.height) return `${Math.round(rect.width)} x ${Math.round(rect.height)}`;
+        return 'Unknown';
+    }
+
+    function rectDimensions(el) {
+        if (!el || typeof el.getBoundingClientRect !== 'function') return 'Unknown';
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return 'Unknown';
+        return `${Math.round(rect.width)} x ${Math.round(rect.height)}`;
+    }
+
+    function useHref(useEl) {
+        return useEl.getAttribute('href') ||
+            useEl.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || '';
+    }
+
+    function splitUseReference(value) {
+        if (!value) return { url: '', id: '' };
+        const hashIndex = value.indexOf('#');
+        if (hashIndex === -1) return { url: '', id: '' };
+        const urlPart = value.slice(0, hashIndex);
+        const id = value.slice(hashIndex + 1);
+        return { url: urlPart ? absolutizeUrl(urlPart) : '', id };
+    }
+
+    function symbolToSvgCode(symbol, hostSvg) {
+        if (!symbol) return '';
+        const viewBox = symbol.getAttribute('viewBox') ||
+            (hostSvg && hostSvg.getAttribute('viewBox')) || '0 0 24 24';
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeHtml(viewBox)}">${symbol.innerHTML}</svg>`;
+    }
+
+    function resolveInlineUseSvg(useEl) {
+        const reference = splitUseReference(useHref(useEl));
+        if (!reference.id || reference.url) return '';
+        const symbol = document.getElementById(reference.id);
+        return symbolToSvgCode(symbol, useEl.closest('svg'));
+    }
+
+    async function resolveExternalUseSvg(asset) {
+        const text = await fetchAssetText(asset.spriteUrl);
+        const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+        const symbol = doc.getElementById(asset.symbolId);
+        if (!symbol) throw new Error('Symbol not found: ' + asset.symbolId);
+        return symbolToSvgCode(symbol, null);
+    }
+
+    function assetTypeLabel(asset) {
+        if (asset.kind === 'svg-inline') return 'SVG inline';
+        if (asset.kind === 'svg-external') return 'SVG external';
+        if (asset.kind === 'sprite') return 'Sprite';
+        if (asset.kind === 'background') return 'Background image';
+        if (asset.kind === 'video-poster') return 'Video poster';
+        if (isDataUri(asset.url)) return 'Data URI image';
+        return 'Image';
+    }
+
+    function assetBadge(asset) {
+        if (asset.kind === 'sprite') return 'SPR';
+        if (asset.kind === 'background') return 'BG';
+        if (asset.kind === 'svg-inline' || asset.kind === 'svg-external') return 'SVG';
+        return 'IMG';
+    }
+
+    function makeAsset(base) {
+        const asset = Object.assign({
+            id: '',
+            selected: true,
+            kind: 'img',
+            typeLabel: '',
+            badge: '',
+            element: null,
+            url: '',
+            svgCode: '',
+            spriteUrl: '',
+            symbolId: '',
+            name: '',
+            dimensions: 'Unknown',
+            sizeBytes: null,
+            sizeLabel: 'Unknown',
+            thumbnailUrl: '',
+            mime: '',
+        }, base);
+        asset.typeLabel = asset.typeLabel || assetTypeLabel(asset);
+        asset.badge = asset.badge || assetBadge(asset);
+        asset.name = asset.name || assetDisplayName(asset.element, asset.url, asset.typeLabel);
+        if (!asset.thumbnailUrl) {
+            asset.thumbnailUrl = asset.svgCode ? svgDataUrl(asset.svgCode) : asset.url;
+        }
+        if (asset.sizeBytes === null) {
+            if (asset.svgCode) asset.sizeBytes = textByteLength(asset.svgCode);
+            else if (isDataUri(asset.url)) asset.sizeBytes = dataUriByteLength(asset.url);
+        }
+        asset.sizeLabel = asset.sizeBytes === null ? asset.sizeLabel : bytesToLabel(asset.sizeBytes);
+        return asset;
+    }
+
+    function findUseElement(target) {
+        if (!target || typeof target.closest !== 'function') return null;
+        if (target.tagName && target.tagName.toLowerCase() === 'use') return target;
+        const svg = target.closest('svg');
+        return svg ? svg.querySelector('use') : null;
+    }
+
+    function assetFromUse(useEl) {
+        const reference = splitUseReference(useHref(useEl));
+        if (!reference.id) return null;
+        const inlineCode = resolveInlineUseSvg(useEl);
+        const hostSvg = useEl.closest('svg');
+        return makeAsset({
+            kind: 'sprite',
+            element: hostSvg || useEl,
+            url: reference.url ? `${reference.url}#${reference.id}` : '#' + reference.id,
+            spriteUrl: reference.url,
+            symbolId: reference.id,
+            svgCode: inlineCode,
+            name: assetDisplayName(hostSvg || useEl, reference.url, reference.id || 'sprite'),
+            dimensions: hostSvg ? getSvgDimensions(hostSvg) : 'Unknown',
+        });
+    }
+
+    function assetFromInlineSvg(svg) {
+        return makeAsset({
+            kind: 'svg-inline',
+            element: svg,
+            svgCode: serializeSvgElement(svg),
+            name: assetDisplayName(svg, '', 'inline-svg'),
+            dimensions: getSvgDimensions(svg),
+        });
+    }
+
+    function assetFromImage(img) {
+        const url = getBestImageSource(img);
+        if (!url) return null;
+        return makeAsset({
+            kind: isSvgUrl(url) ? 'svg-external' : 'img',
+            element: img,
+            url,
+            name: assetDisplayName(img, url, 'image'),
+            dimensions: img.naturalWidth && img.naturalHeight
+                ? `${img.naturalWidth} x ${img.naturalHeight}`
+                : rectDimensions(img),
+        });
+    }
+
+    function assetFromVideoPoster(video) {
+        const url = absolutizeUrl(video.getAttribute('poster'));
+        if (!url) return null;
+        return makeAsset({
+            kind: isSvgUrl(url) ? 'svg-external' : 'video-poster',
+            element: video,
+            url,
+            name: assetDisplayName(video, url, 'video-poster'),
+            dimensions: video.videoWidth && video.videoHeight
+                ? `${video.videoWidth} x ${video.videoHeight}`
+                : rectDimensions(video),
+        });
+    }
+
+    function assetFromBackground(el) {
+        const style = window.getComputedStyle(el);
+        const url = extractCssUrl(style.backgroundImage);
+        if (!url) return null;
+        const position = style.backgroundPosition || '';
+        const isSprite = position && position !== '0% 0%' && position !== '0px 0px';
+        return makeAsset({
+            kind: isSprite ? 'sprite' : isSvgUrl(url) ? 'svg-external' : 'background',
+            element: el,
+            url,
+            name: assetDisplayName(el, url, isSprite ? 'sprite' : 'background'),
+            dimensions: rectDimensions(el),
+        });
+    }
+
+    function detectAssetFromElement(target) {
+        if (!target || isCdpElement(target)) return null;
+        const useEl = findUseElement(target);
+        if (useEl && !isCdpElement(useEl)) {
+            const useAsset = assetFromUse(useEl);
+            if (useAsset) return useAsset;
+        }
+        const svg = target.closest && target.closest('svg');
+        if (svg && !isCdpElement(svg)) return assetFromInlineSvg(svg);
+        const img = target.closest && target.closest('img');
+        if (img && !isCdpElement(img)) return assetFromImage(img);
+        const video = target.closest && target.closest('video[poster]');
+        if (video && !isCdpElement(video)) return assetFromVideoPoster(video);
+        let el = target;
+        while (el && el !== document.documentElement) {
+            if (isCdpElement(el)) return null;
+            if (el.nodeType === 1) {
+                const asset = assetFromBackground(el);
+                if (asset) return asset;
+            }
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    function gmRequest(options) {
+        return new Promise((resolve, reject) => {
+            try {
+                if (typeof GM_xmlhttpRequest !== 'function') {
+                    reject(new Error('GM_xmlhttpRequest is not available'));
+                    return;
+                }
+                let settled = false;
+                const timeoutMs = options.timeout || ASSET_FETCH_TIMEOUT_MS;
+                const timer = setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    reject(new Error('Request timed out: ' + options.url));
+                }, timeoutMs + 1000);
+                GM_xmlhttpRequest(Object.assign({}, options, {
+                    timeout: timeoutMs,
+                    onload(response) {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        resolve(response);
+                    },
+                    onerror(error) {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        reject(error || new Error('Request failed: ' + options.url));
+                    },
+                    ontimeout() {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        reject(new Error('Request timed out: ' + options.url));
+                    },
+                }));
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    async function fetchAssetText(url) {
+        if (isDataUri(url)) return dataUriToText(url);
+        const response = await gmRequest({ method: 'GET', url, timeout: ASSET_FETCH_TIMEOUT_MS });
+        if (response.status < 200 || response.status >= 300) {
+            throw new Error('HTTP status ' + response.status + ' for ' + url);
+        }
+        return response.responseText || '';
+    }
+
+    function headerValue(headers, name) {
+        const pattern = new RegExp('^' + name + ':\\s*(.+)$', 'im');
+        const match = pattern.exec(headers || '');
+        return match ? match[1].trim() : '';
+    }
+
+    async function fetchAssetHeadMeta(asset) {
+        if (!asset.url || isDataUri(asset.url)) return asset;
+        try {
+            const response = await gmRequest({ method: 'HEAD', url: asset.url, timeout: ASSET_FETCH_TIMEOUT_MS });
+            if (response.status < 200 || response.status >= 400) {
+                throw new Error('HTTP status ' + response.status + ' for ' + asset.url);
+            }
+            const length = parseInt(headerValue(response.responseHeaders, 'content-length'), 10);
+            if (Number.isFinite(length)) {
+                asset.sizeBytes = length;
+                asset.sizeLabel = bytesToLabel(length);
+            }
+            const mime = headerValue(response.responseHeaders, 'content-type');
+            if (mime && asset.kind !== 'svg-inline' && asset.kind !== 'sprite') {
+                asset.mime = mime;
+                if (mime.toLowerCase().includes('svg')) {
+                    asset.kind = 'svg-external';
+                    asset.typeLabel = assetTypeLabel(asset);
+                    asset.badge = assetBadge(asset);
+                }
+            }
+        } catch (err) {
+            logError('fetchAssetHeadMeta', err);
+        }
+        return asset;
+    }
+
+    async function assetSvgCode(asset) {
+        if (asset.svgCode) return asset.svgCode;
+        if (asset.kind === 'sprite' && asset.spriteUrl && asset.symbolId) {
+            return resolveExternalUseSvg(asset);
+        }
+        if (asset.url && (isSvgUrl(asset.url) || String(asset.mime || '').toLowerCase().includes('svg'))) {
+            return fetchAssetText(asset.url);
+        }
+        return '';
+    }
+
+    function assetCanCopySvg(asset) {
+        return !!(asset && (asset.svgCode || asset.kind === 'sprite' ||
+            isSvgUrl(asset.url) || String(asset.mime || '').toLowerCase().includes('svg')));
+    }
+
+    async function copyAssetSvgCode(asset) {
+        try {
+            if (!assetCanCopySvg(asset)) {
+                showToast('SVG code unavailable');
+                return;
+            }
+            const svgCode = await assetSvgCode(asset);
+            if (!svgCode) throw new Error('SVG code is empty');
+            copyToClipboard(svgCode);
+        } catch (err) {
+            logError('copyAssetSvgCode', err);
+            showToast('Copy SVG failed');
+        }
+    }
+
+    async function assetDownloadUrl(asset) {
+        if (asset.svgCode) return svgDataUrl(asset.svgCode);
+        if (asset.kind === 'sprite' && asset.spriteUrl && asset.symbolId) {
+            return svgDataUrl(await resolveExternalUseSvg(asset));
+        }
+        if (asset.url) return asset.url;
+        throw new Error('Asset has no downloadable source');
+    }
+
+    function gmDownload(url, filename) {
+        return new Promise((resolve, reject) => {
+            try {
+                if (typeof GM_download !== 'function') {
+                    reject(new Error('GM_download is not available'));
+                    return;
+                }
+                let settled = false;
+                let handle = null;
+                const timer = setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    try {
+                        if (handle && typeof handle.abort === 'function') handle.abort();
+                    } catch (err) {
+                        logError('gmDownload abort', err);
+                    }
+                    reject(new Error('Download timed out: ' + filename));
+                }, ASSET_DOWNLOAD_TIMEOUT_MS);
+                handle = GM_download({
+                    url,
+                    name: filename,
+                    saveAs: false,
+                    onload() {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        resolve();
+                    },
+                    onerror(error) {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        reject(error || new Error('Download failed: ' + filename));
+                    },
+                    ontimeout() {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        reject(new Error('Download timed out: ' + filename));
+                    },
+                });
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    async function downloadAsset(asset) {
+        try {
+            const url = await assetDownloadUrl(asset);
+            await gmDownload(url, assetFilename(asset));
+            showToast('Downloaded: ' + assetFilename(asset));
+        } catch (err) {
+            logError('downloadAsset', err);
+            showToast('Download failed');
+            throw err;
+        }
+    }
+
+    async function downloadAssetsSequential(assets) {
+        if (isDownloadingAssets) return;
+        isDownloadingAssets = true;
+        try {
+            for (const asset of assets) {
+                try {
+                    await downloadAsset(asset);
+                } catch (err) {
+                    logError('downloadAssetsSequential item', err);
+                }
+            }
+        } catch (err) {
+            logError('downloadAssetsSequential', err);
+        } finally {
+            isDownloadingAssets = false;
+            if (activeTab === 'assets') renderCurrentTab();
+        }
+    }
+
+    function assetKey(asset) {
+        if (asset.kind === 'svg-inline') return 'inline:' + asset.svgCode;
+        if (asset.kind === 'sprite') return 'sprite:' + asset.url + ':' + asset.symbolId;
+        return asset.kind + ':' + (asset.url || asset.name);
+    }
+
+    function collectPageAssetCandidates() {
+        const map = new Map();
+        function add(asset) {
+            if (!asset) return;
+            const key = assetKey(asset);
+            if (!map.has(key)) map.set(key, asset);
+        }
+
+        document.querySelectorAll('svg').forEach(svg => {
+            if (isCdpElement(svg)) return;
+            add(assetFromInlineSvg(svg));
+            svg.querySelectorAll('use').forEach(useEl => add(assetFromUse(useEl)));
+        });
+        document.querySelectorAll('img').forEach(img => {
+            if (!isCdpElement(img)) add(assetFromImage(img));
+        });
+        document.querySelectorAll('picture source[srcset]').forEach(source => {
+            if (isCdpElement(source) || source.closest('picture')?.querySelector('img')) return;
+            const url = bestSrcsetCandidate(source.getAttribute('srcset'));
+            if (!url) return;
+            add(makeAsset({
+                kind: isSvgUrl(url) ? 'svg-external' : 'img',
+                element: source,
+                url,
+                name: assetDisplayName(source, url, 'picture-source'),
+                dimensions: 'Unknown',
+            }));
+        });
+        document.querySelectorAll('video[poster]').forEach(video => {
+            if (!isCdpElement(video)) add(assetFromVideoPoster(video));
+        });
+        document.querySelectorAll('body *').forEach(el => {
+            if (!isCdpElement(el)) add(assetFromBackground(el));
+        });
+
+        return Array.from(map.values()).map((asset, index) => {
+            asset.id = 'asset-' + index;
+            return asset;
+        });
+    }
+
+    async function scanPageAssets() {
+        if (isScanningAssets) return;
+        isScanningAssets = true;
+        pageAssets = [];
+        renderCurrentTab();
+        try {
+            pageAssets = collectPageAssetCandidates();
+            for (const asset of pageAssets) {
+                await fetchAssetHeadMeta(asset);
+            }
+            showToast(pageAssets.length + ' assets found');
+        } catch (err) {
+            logError('scanPageAssets', err);
+            showToast('Asset scan failed');
+        } finally {
+            isScanningAssets = false;
+            if (activeTab === 'assets') renderCurrentTab();
+        }
+    }
     /* ===== CLAMP — keeps panel inside viewport ===== */
     function clampPanel(panel) {
         const rect = panel.getBoundingClientRect();
@@ -1122,7 +2031,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.4</span>
+                    <span id="cdp-version">v2.5</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
@@ -1136,6 +2045,7 @@
                     <span id="cdp-detect-label">Start Color Detection</span>
                 </button>
                 <button id="cdp-mode-btn" type="button" title="Toggle detection mode">Mode</button>
+                <button id="cdp-asset-btn" type="button" class="cdp-inactive" title="Pick page assets">Asset Picker</button>
                 <button id="cdp-clear-btn" title="Clear History">Clear</button>
             </div>
 
@@ -1179,6 +2089,9 @@
                 <button class="cdp-tab" data-tab="harmony">
                     Harmony
                 </button>
+                <button class="cdp-tab" data-tab="assets">
+                    Assets
+                </button>
             </div>
 
             <div id="cdp-search-box">
@@ -1202,6 +2115,16 @@
                 </div>
             </div>`;
         document.body.appendChild(panel);
+
+        const assetActions = document.createElement('div');
+        assetActions.id = 'cdp-asset-action-popover';
+        assetActions.className = 'cdp-hidden';
+        assetActions.innerHTML = `
+            <div id="cdp-asset-action-title">Asset actions</div>
+            <div id="cdp-asset-action-meta"></div>
+            <button id="cdp-asset-copy-svg-btn" type="button">Copy SVG code</button>
+            <button id="cdp-asset-download-btn" type="button">Download</button>`;
+        document.body.appendChild(assetActions);
 
         setupEventListeners();
     }
@@ -1243,6 +2166,7 @@
     }
 
     function setDetecting(active) {
+        if (active && isAssetPickerActive) setAssetPickerActive(false);
         isDetecting = active;
         updateDetectionControls();
         if (!active) {
@@ -1264,6 +2188,30 @@
         detectionMode = nextMode;
         updateDetectionModeButton();
         updateDetectionControls();
+    }
+
+    function updateAssetPickerControls() {
+        const assetBtn = document.getElementById('cdp-asset-btn');
+        if (!assetBtn) return;
+        assetBtn.className = isAssetPickerActive ? 'cdp-active' : 'cdp-inactive';
+        assetBtn.textContent = isAssetPickerActive ? 'Picking assets' : 'Asset Picker';
+    }
+
+    function setAssetPickerActive(active) {
+        isAssetPickerActive = active;
+        updateAssetPickerControls();
+        if (active) {
+            if (isDetecting) setDetecting(false);
+            hideAssetActionPopover();
+            showToast('Asset Picker active');
+            return;
+        }
+        hideAssetActionPopover();
+        document.getElementById('cdp-cursor-tooltip').classList.remove('cdp-tooltip-visible');
+        if (currentAssetHighlight) {
+            currentAssetHighlight.classList.remove('cdp-element-highlight');
+            currentAssetHighlight = null;
+        }
     }
 
     function selectTab(tabName, shouldPersist, shouldRender) {
@@ -1294,6 +2242,7 @@
         setDetectionMode(browserSupportsEyeDropper()
             ? DETECTION_MODE_EYEDROPPER
             : DETECTION_MODE_COMPUTED);
+        updateAssetPickerControls();
     }
 
     function setupEventListeners() {
@@ -1303,6 +2252,7 @@
         const minBtn = document.getElementById('cdp-btn-minimize');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
+        const assetBtn = document.getElementById('cdp-asset-btn');
         const clearBtn = document.getElementById('cdp-clear-btn');
         const searchIn = document.getElementById('cdp-search-input');
         const tabs = document.querySelectorAll('.cdp-tab');
@@ -1349,6 +2299,18 @@
             showToast('Detection mode: ' + (detectionMode === DETECTION_MODE_EYEDROPPER ? 'Pixel' : 'Style'));
         });
 
+        // Asset Picker
+        assetBtn.addEventListener('click', () => {
+            setAssetPickerActive(!isAssetPickerActive);
+        });
+
+        document.getElementById('cdp-asset-copy-svg-btn').addEventListener('click', () => {
+            copyCurrentPickedAssetSvg();
+        });
+        document.getElementById('cdp-asset-download-btn').addEventListener('click', () => {
+            downloadCurrentPickedAsset();
+        });
+
         // Clear
         clearBtn.addEventListener('click', () => {
             detectionHistory = [];
@@ -1392,6 +2354,9 @@
             if (e.key === 'Escape' && isDetecting) {
                 setDetecting(false);
             }
+            if (e.key === 'Escape' && isAssetPickerActive) {
+                setAssetPickerActive(false);
+            }
         }));
 
         // Viewport resize — re-clamp
@@ -1409,9 +2374,7 @@
     /* ===== MOUSE DETECTION ===== */
 
     function isIgnoredDetectionTarget(target) {
-        return !target || typeof target.closest !== 'function' ||
-            target.closest('#cdp-panel') || target.closest('#cdp-toggle-btn') ||
-            target.closest('#cdp-cursor-tooltip') || target.closest('#cdp-toast');
+        return !target || typeof target.closest !== 'function' || isCdpElement(target);
     }
 
     function getColorName(hex) {
@@ -1477,7 +2440,88 @@
         }
     }
 
+    function positionTooltip(e, tip) {
+        const tx = e.clientX + 18, ty = e.clientY + 18;
+        tip.style.left = tx + 'px'; tip.style.top = ty + 'px';
+        const tr = tip.getBoundingClientRect();
+        if (tr.right > window.innerWidth) tip.style.left = (e.clientX - tr.width - 10) + 'px';
+        if (tr.bottom > window.innerHeight) tip.style.top = (e.clientY - tr.height - 10) + 'px';
+    }
+
+    function clearAssetHighlight() {
+        if (currentAssetHighlight) {
+            currentAssetHighlight.classList.remove('cdp-element-highlight');
+            currentAssetHighlight = null;
+        }
+    }
+
+    function handleAssetPickerMove(e) {
+        const target = e.target;
+        if (isIgnoredDetectionTarget(target)) return;
+        const asset = detectAssetFromElement(target);
+        const tip = document.getElementById('cdp-cursor-tooltip');
+        if (!asset) {
+            clearAssetHighlight();
+            tip.classList.remove('cdp-tooltip-visible');
+            return;
+        }
+
+        const highlightTarget = asset.element || target;
+        if (currentAssetHighlight && currentAssetHighlight !== highlightTarget) {
+            currentAssetHighlight.classList.remove('cdp-element-highlight');
+        }
+        highlightTarget.classList.add('cdp-element-highlight');
+        currentAssetHighlight = highlightTarget;
+
+        const icon = document.getElementById('cdp-tooltip-swatch');
+        icon.classList.add('cdp-asset-tooltip-icon');
+        icon.style.background = '';
+        icon.textContent = asset.badge;
+        document.getElementById('cdp-tooltip-name').textContent = asset.typeLabel;
+        document.getElementById('cdp-tooltip-hex').textContent = asset.name;
+        tip.classList.add('cdp-tooltip-visible');
+        positionTooltip(e, tip);
+    }
+
+    function showAssetActionPopover(asset, clientX, clientY) {
+        currentPickedAsset = asset;
+        const popover = document.getElementById('cdp-asset-action-popover');
+        document.getElementById('cdp-asset-action-title').textContent = asset.typeLabel;
+        document.getElementById('cdp-asset-action-meta').textContent = asset.name;
+        document.getElementById('cdp-asset-copy-svg-btn').disabled = !assetCanCopySvg(asset);
+        popover.classList.remove('cdp-hidden');
+        popover.style.left = clientX + 12 + 'px';
+        popover.style.top = clientY + 12 + 'px';
+        const rect = popover.getBoundingClientRect();
+        if (rect.right > window.innerWidth) popover.style.left = (clientX - rect.width - 12) + 'px';
+        if (rect.bottom > window.innerHeight) popover.style.top = (clientY - rect.height - 12) + 'px';
+    }
+
+    function hideAssetActionPopover() {
+        currentPickedAsset = null;
+        const popover = document.getElementById('cdp-asset-action-popover');
+        if (popover) popover.classList.add('cdp-hidden');
+    }
+
+    async function copyCurrentPickedAssetSvg() {
+        if (!currentPickedAsset) return;
+        await copyAssetSvgCode(currentPickedAsset);
+    }
+
+    async function downloadCurrentPickedAsset() {
+        if (!currentPickedAsset) return;
+        try {
+            await downloadAsset(currentPickedAsset);
+        } catch (err) {
+            logError('downloadCurrentPickedAsset', err);
+        }
+    }
+
     function handleMouseMove(e) {
+        if (isAssetPickerActive) {
+            handleAssetPickerMove(e);
+            return;
+        }
         if (!isDetecting || detectionMode !== DETECTION_MODE_COMPUTED) return;
         const target = e.target;
         if (isIgnoredDetectionTarget(target)) return;
@@ -1497,18 +2541,26 @@
         // Tooltip
         const tip = document.getElementById('cdp-cursor-tooltip');
         tip.classList.add('cdp-tooltip-visible');
-        const tx = e.clientX + 18, ty = e.clientY + 18;
-        tip.style.left = tx + 'px'; tip.style.top = ty + 'px';
-        const tr = tip.getBoundingClientRect();
-        if (tr.right > window.innerWidth) tip.style.left = (e.clientX - tr.width - 10) + 'px';
-        if (tr.bottom > window.innerHeight) tip.style.top = (e.clientY - tr.height - 10) + 'px';
+        positionTooltip(e, tip);
 
-        document.getElementById('cdp-tooltip-swatch').style.background = hex;
+        const swatch = document.getElementById('cdp-tooltip-swatch');
+        swatch.classList.remove('cdp-asset-tooltip-icon');
+        swatch.textContent = '';
+        swatch.style.background = hex;
         document.getElementById('cdp-tooltip-name').textContent = colorName;
         document.getElementById('cdp-tooltip-hex').textContent = hex;
     }
 
     function handleDetectionClick(e) {
+        if (isAssetPickerActive) {
+            const target = e.target;
+            if (isIgnoredDetectionTarget(target)) return;
+            const asset = detectAssetFromElement(target);
+            if (!asset) return;
+            e.preventDefault(); e.stopPropagation();
+            showAssetActionPopover(asset, e.clientX, e.clientY);
+            return;
+        }
         if (!isDetecting || detectionMode !== DETECTION_MODE_COMPUTED) return;
         const target = e.target;
         if (isIgnoredDetectionTarget(target)) return;
@@ -1585,6 +2637,7 @@
         else if (tab === 'history') renderHistory();
         else if (tab === 'palette') renderPalette();
         else if (tab === 'harmony') renderHarmony();
+        else if (tab === 'assets') renderAssets();
     }
 
     function updatePreview(hex, name) {
@@ -1862,6 +2915,117 @@
         });
         container.innerHTML = html;
         attachHarmonyHandlers(container, schemes);
+    }
+
+    function selectedPageAssets(container) {
+        const selectedIds = new Set();
+        container.querySelectorAll('.cdp-asset-select:checked').forEach(input => {
+            selectedIds.add(input.dataset.assetId);
+        });
+        pageAssets.forEach(asset => {
+            asset.selected = selectedIds.has(asset.id);
+        });
+        return pageAssets.filter(asset => asset.selected);
+    }
+
+    function renderAssetThumbnail(asset) {
+        if (asset.thumbnailUrl) {
+            return `<img src="${escapeHtml(asset.thumbnailUrl)}" alt="${escapeHtml(asset.name)}">`;
+        }
+        return `<div class="cdp-asset-thumb-placeholder">${escapeHtml(asset.badge || 'Asset')}</div>`;
+    }
+
+    function renderAssets() {
+        const container = document.getElementById('cdp-color-list-container');
+        const scanLabel = isScanningAssets ? 'Scanning...' : 'Scan Page';
+        const disabled = isScanningAssets || isDownloadingAssets ? ' disabled' : '';
+        let html = `
+            <div class="cdp-assets-toolbar">
+                <button class="cdp-assets-action" id="cdp-scan-assets-btn" type="button"${disabled}>${scanLabel}</button>
+                <button class="cdp-assets-action" id="cdp-download-selected-assets-btn" type="button"${disabled}>Download Selected</button>
+                <button class="cdp-assets-action" id="cdp-download-all-assets-btn" type="button"${disabled}>Download All</button>
+                <span class="cdp-assets-count">${pageAssets.length} assets</span>
+            </div>`;
+
+        if (isScanningAssets) {
+            html += '<div class="cdp-loading-spinner"></div>';
+        } else if (pageAssets.length === 0) {
+            html += `
+                <div class="cdp-empty-state">
+                    <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 14l2.5-3 2 2.5L15 10l3 4"/></svg></div>
+                    <div class="cdp-empty-state-text">Scan the page to collect SVG and image assets.</div>
+                </div>`;
+        } else {
+            html += '<div class="cdp-assets-grid">';
+            pageAssets.forEach(asset => {
+                const checked = asset.selected ? ' checked' : '';
+                const copyDisabled = assetCanCopySvg(asset) ? '' : ' disabled';
+                html += `
+                    <div class="cdp-asset-card" data-asset-id="${escapeHtml(asset.id)}">
+                        <div class="cdp-asset-thumb">${renderAssetThumbnail(asset)}</div>
+                        <div class="cdp-asset-card-body">
+                            <label class="cdp-asset-check-row">
+                                <input type="checkbox" class="cdp-asset-select" data-asset-id="${escapeHtml(asset.id)}"${checked}>
+                                <span class="cdp-asset-name">${escapeHtml(asset.name)}</span>
+                            </label>
+                            <div class="cdp-asset-meta">${escapeHtml(asset.typeLabel)}</div>
+                            <div class="cdp-asset-meta">${escapeHtml(asset.dimensions)} - ${escapeHtml(asset.sizeLabel)}</div>
+                            <div class="cdp-asset-card-actions">
+                                <button class="cdp-asset-small-btn cdp-asset-copy-svg" data-asset-id="${escapeHtml(asset.id)}" type="button"${copyDisabled}>Copy SVG</button>
+                                <button class="cdp-asset-small-btn cdp-asset-download-one" data-asset-id="${escapeHtml(asset.id)}" type="button">Download</button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
+        attachAssetTabHandlers(container);
+    }
+
+    function attachAssetTabHandlers(container) {
+        const scanBtn = document.getElementById('cdp-scan-assets-btn');
+        const selectedBtn = document.getElementById('cdp-download-selected-assets-btn');
+        const allBtn = document.getElementById('cdp-download-all-assets-btn');
+        if (scanBtn) {
+            scanBtn.addEventListener('click', () => {
+                scanPageAssets();
+            });
+        }
+        if (selectedBtn) {
+            selectedBtn.addEventListener('click', () => {
+                const selected = selectedPageAssets(container);
+                if (selected.length === 0) {
+                    showToast('No assets selected');
+                    return;
+                }
+                downloadAssetsSequential(selected);
+            });
+        }
+        if (allBtn) {
+            allBtn.addEventListener('click', () => {
+                downloadAssetsSequential(pageAssets);
+            });
+        }
+        container.querySelectorAll('.cdp-asset-select').forEach(input => {
+            input.addEventListener('change', () => {
+                const asset = pageAssets.find(item => item.id === input.dataset.assetId);
+                if (asset) asset.selected = input.checked;
+            });
+        });
+        container.querySelectorAll('.cdp-asset-copy-svg').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const asset = pageAssets.find(item => item.id === btn.dataset.assetId);
+                if (asset) copyAssetSvgCode(asset);
+            });
+        });
+        container.querySelectorAll('.cdp-asset-download-one').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const asset = pageAssets.find(item => item.id === btn.dataset.assetId);
+                if (asset) downloadAsset(asset).catch(err => logError('download asset card', err));
+            });
+        });
     }
 
     function attachExportHandlers(container) {

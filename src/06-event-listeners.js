@@ -35,6 +35,7 @@
     }
 
     function setDetecting(active) {
+        if (active && isAssetPickerActive) setAssetPickerActive(false);
         isDetecting = active;
         updateDetectionControls();
         if (!active) {
@@ -56,6 +57,30 @@
         detectionMode = nextMode;
         updateDetectionModeButton();
         updateDetectionControls();
+    }
+
+    function updateAssetPickerControls() {
+        const assetBtn = document.getElementById('cdp-asset-btn');
+        if (!assetBtn) return;
+        assetBtn.className = isAssetPickerActive ? 'cdp-active' : 'cdp-inactive';
+        assetBtn.textContent = isAssetPickerActive ? 'Picking assets' : 'Asset Picker';
+    }
+
+    function setAssetPickerActive(active) {
+        isAssetPickerActive = active;
+        updateAssetPickerControls();
+        if (active) {
+            if (isDetecting) setDetecting(false);
+            hideAssetActionPopover();
+            showToast('Asset Picker active');
+            return;
+        }
+        hideAssetActionPopover();
+        document.getElementById('cdp-cursor-tooltip').classList.remove('cdp-tooltip-visible');
+        if (currentAssetHighlight) {
+            currentAssetHighlight.classList.remove('cdp-element-highlight');
+            currentAssetHighlight = null;
+        }
     }
 
     function selectTab(tabName, shouldPersist, shouldRender) {
@@ -86,6 +111,7 @@
         setDetectionMode(browserSupportsEyeDropper()
             ? DETECTION_MODE_EYEDROPPER
             : DETECTION_MODE_COMPUTED);
+        updateAssetPickerControls();
     }
 
     function setupEventListeners() {
@@ -95,6 +121,7 @@
         const minBtn = document.getElementById('cdp-btn-minimize');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
+        const assetBtn = document.getElementById('cdp-asset-btn');
         const clearBtn = document.getElementById('cdp-clear-btn');
         const searchIn = document.getElementById('cdp-search-input');
         const tabs = document.querySelectorAll('.cdp-tab');
@@ -141,6 +168,18 @@
             showToast('Detection mode: ' + (detectionMode === DETECTION_MODE_EYEDROPPER ? 'Pixel' : 'Style'));
         });
 
+        // Asset Picker
+        assetBtn.addEventListener('click', () => {
+            setAssetPickerActive(!isAssetPickerActive);
+        });
+
+        document.getElementById('cdp-asset-copy-svg-btn').addEventListener('click', () => {
+            copyCurrentPickedAssetSvg();
+        });
+        document.getElementById('cdp-asset-download-btn').addEventListener('click', () => {
+            downloadCurrentPickedAsset();
+        });
+
         // Clear
         clearBtn.addEventListener('click', () => {
             detectionHistory = [];
@@ -183,6 +222,9 @@
             }
             if (e.key === 'Escape' && isDetecting) {
                 setDetecting(false);
+            }
+            if (e.key === 'Escape' && isAssetPickerActive) {
+                setAssetPickerActive(false);
             }
         }));
 
