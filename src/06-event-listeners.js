@@ -65,6 +65,9 @@
         if (!assetBtn) return;
         assetBtn.className = isAssetPickerActive ? 'cdp-active' : 'cdp-inactive';
         assetBtn.textContent = isAssetPickerActive ? 'Picking assets' : 'Asset Picker';
+        assetBtn.title = isAssetPickerActive
+            ? (iconIndexByHash.size > 0 ? 'Hover an asset; known SVG icons are identified automatically' : 'Loading icon matcher...')
+            : 'Pick page assets and identify known SVG icons';
     }
 
     function setAssetPickerActive(active) {
@@ -74,6 +77,16 @@
             if (isInspectActive) setInspectActive(false);
             if (isDetecting) setDetecting(false);
             hideAssetActionPopover();
+            loadIconIndex().then(count => {
+                if (!isAssetPickerActive) return;
+                updateAssetPickerControls();
+                if (count > 0) {
+                    showNotification(count + ' local icons ready', 'success');
+                } else {
+                    const button = document.getElementById('cdp-asset-btn');
+                    if (button) button.title = 'Icon matcher unavailable; asset picking remains active';
+                }
+            });
             showNotification('Asset Picker active', 'info');
             return;
         }
@@ -128,6 +141,12 @@
         sidebarSide = nextSide;
         panel.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
         panel.setAttribute('data-side', sidebarSide);
+        const sideBtn = document.getElementById('cdp-side-btn');
+        if (sideBtn) {
+            const targetSide = sidebarSide === 'left' ? 'right' : 'left';
+            sideBtn.title = 'Move sidebar to ' + targetSide;
+            sideBtn.setAttribute('aria-label', 'Move sidebar to ' + targetSide);
+        }
         safeSetValue(STORAGE_KEYS.sidebarSide, sidebarSide);
         if (shouldNotify && sideChanged) {
             showNotification('Sidebar: ' + (sidebarSide === 'left' ? 'Left' : 'Right'), 'info');
@@ -171,6 +190,7 @@
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
         const colorNav = document.getElementById('cdp-color-nav');
+        const sideBtn = document.getElementById('cdp-side-btn');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
@@ -191,6 +211,11 @@
         colorNav.addEventListener('click', () => {
             setPanelOpen(panel, true);
             detectBtn.focus();
+        });
+
+        // Move sidebar; tetap tersedia saat konten sidebar ditutup.
+        sideBtn.addEventListener('click', () => {
+            setPanelSide(panel, sidebarSide === 'left' ? 'right' : 'left');
         });
 
         // Detect

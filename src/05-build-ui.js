@@ -19,6 +19,7 @@
         harmony: '<circle cx="15" cy="9" r="7"/><circle cx="9" cy="15" r="7"/>',
         assets: '<path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect x="8" y="2" width="14" height="14" rx="2"/>',
         info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        move: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
     });
 
     function navigationIcon(name, size = 20) {
@@ -79,6 +80,9 @@
                         <span class="cdp-tab-label">Site Info</span>
                     </button>
                 </nav>
+                <button id="cdp-side-btn" class="cdp-rail-btn cdp-side-btn" type="button" title="Move sidebar to left" aria-label="Move sidebar to left">
+                    ${navigationIcon('move')}
+                </button>
             </aside>
 
             <main id="cdp-sidebar-content" aria-hidden="true">
@@ -86,7 +90,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v3.0.0</span>
+                    <span id="cdp-version">v3.1.0</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>

@@ -25,6 +25,8 @@ ada di [SKILL.md](SKILL.md).
   monochromatic dari warna terakhir yang terdeteksi.
 - Mode Asset Picker membantu mengambil SVG, gambar, background image,
   sprite, data URI, dan poster video dari halaman sebagai referensi desain.
+- Saat kursor menyentuh SVG dalam mode Asset Picker, geometri ikon dicocokkan
+  otomatis dengan koleksi lokal dan nama ikon ditampilkan bila cocok.
 - Tab Assets memindai halaman, menampilkan galeri aset, dan mengunduh aset
   terpilih atau semua aset secara berurutan.
 - Mode Inspect menampilkan properti CSS utama elemen dan menyalin deklarasi
@@ -35,8 +37,9 @@ ada di [SKILL.md](SKILL.md).
   Database, History, Palette, Harmony, Assets, dan Site Info.
 - Saat sidebar ditutup, navigation rail tetap terlihat sebagai deretan ikon;
   tombol `panel-right-close` di bagian atas membuka atau menutup konten.
-- Tombol `Left` dan `Right` memindahkan sidebar ke sisi layar yang tidak
-  menutupi konten yang sedang diperiksa.
+- Tombol pindah sisi pada navigation rail tetap berfungsi saat konten sidebar
+  ditutup, sehingga rail dapat dipindahkan tanpa membuka panel lebih dahulu.
+- Tombol `Left` dan `Right` juga memindahkan sidebar saat konten sedang terbuka.
 - Tampilan memakai gaya sederhana ala GitHub dengan tombol sedikit
   melengkung dan kartu yang rapi.
 
@@ -57,7 +60,10 @@ Mode otomatis (rebuild tiap kali file di `src/` disimpan):
 node build.js --watch  # atau: npm run watch
 ```
 
-Tidak butuh dependency apa pun — cukup Node.js bawaan.
+Tidak butuh dependency apa pun — cukup Node.js bawaan. Setiap build juga
+memperbarui `public/data/icon-index.json` dari seluruh SVG di
+`public/assets/icons/`, sehingga koleksi ikon dan pencocok otomatis selalu
+sinkron.
 
 ## Aset Publik
 
@@ -67,6 +73,7 @@ melalui raw URL GitHub setelah perubahan tersedia di branch `main`.
 | Path | Isi | Raw URL |
 |---|---|---|
 | `public/data/colors.json` | Database 745 nama warna | `https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/data/colors.json` |
+| `public/data/icon-index.json` | Indeks pencocokan 1.847 ikon SVG | `https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/data/icon-index.json` |
 | `public/assets/images/profile.svg` | Ikon utama userscript | `https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main/public/assets/images/profile.svg` |
 | `public/assets/icons/` | Koleksi ikon SVG | Tambahkan nama file setelah path folder, misalnya `search.svg` |
 

@@ -33,6 +33,13 @@ function loadSidebarUtilities() {
         },
         focus() {},
     };
+    const sideButtonAttributes = {};
+    const sideButton = {
+        title: '',
+        setAttribute(name, value) {
+            sideButtonAttributes[name] = value;
+        },
+    };
     const panel = {
         classList: panelClasses,
         setAttribute(name, value) {
@@ -62,6 +69,7 @@ function loadSidebarUtilities() {
             activeElement: null,
             getElementById(id) {
                 if (id === 'cdp-toggle-btn') return toggleButton;
+                if (id === 'cdp-side-btn') return sideButton;
                 if (id === 'cdp-sidebar-content') return content;
                 return null;
             },
@@ -83,6 +91,8 @@ function loadSidebarUtilities() {
         contentAttributes,
         toggleAttributes,
         toggleButton,
+        sideButton,
+        sideButtonAttributes,
         storedValues,
         notifications,
     };
@@ -97,6 +107,7 @@ test('buildUI keeps the toggle and section tabs inside a persistent navigation r
     assert.ok(contentIndex > railIndex);
     assert.match(source, /id="cdp-toggle-btn" class="cdp-rail-btn cdp-rail-toggle"/);
     assert.match(source, /id="cdp-color-nav" class="cdp-rail-btn"/);
+    assert.match(source, /id="cdp-side-btn" class="cdp-rail-btn cdp-side-btn"/);
     assert.match(source, /<nav id="cdp-tabs"/);
     assert.doesNotMatch(source, /appendChild\(toggleBtn\)|cdp-btn-close/);
 });
@@ -130,12 +141,16 @@ test('setPanelSide moves the sidebar between screen edges', () => {
     assert.equal(ui.getPanelSide(), 'left');
     assert.equal(ui.panelClasses.classes.has('cdp-sidebar-left'), true);
     assert.equal(ui.panelAttributes['data-side'], 'left');
+    assert.equal(ui.sideButton.title, 'Move sidebar to right');
+    assert.equal(ui.sideButtonAttributes['aria-label'], 'Move sidebar to right');
     assert.equal(ui.storedValues.cdp_sidebar_side, 'left');
     assert.deepEqual(ui.notifications, [{ message: 'Sidebar: Left', type: 'info' }]);
 
     ui.setPanelSide(ui.panel, 'right');
     assert.equal(ui.getPanelSide(), 'right');
     assert.equal(ui.panelClasses.classes.has('cdp-sidebar-left'), false);
+    assert.equal(ui.sideButton.title, 'Move sidebar to left');
+    assert.equal(ui.sideButtonAttributes['aria-label'], 'Move sidebar to left');
     assert.equal(ui.storedValues.cdp_sidebar_side, 'right');
     assert.deepEqual(ui.notifications[1], { message: 'Sidebar: Right', type: 'info' });
 });

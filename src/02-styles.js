@@ -156,6 +156,7 @@
         #cdp-tabs {
             width: 100%;
             min-height: 0;
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -166,6 +167,10 @@
         }
         #cdp-tabs::-webkit-scrollbar {
             display: none;
+        }
+        .cdp-side-btn {
+            flex-shrink: 0;
+            margin-top: 4px;
         }
         .cdp-tab.cdp-tab-active {
             color: #fff;
@@ -687,6 +692,10 @@
             font-size: 11px;
             line-height: 1.4;
             word-break: break-word;
+        }
+        .cdp-asset-icon-match {
+            color: #3fb950;
+            font-weight: 600;
         }
         .cdp-asset-card-actions {
             display: flex;

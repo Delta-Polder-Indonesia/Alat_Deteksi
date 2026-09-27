@@ -1,6 +1,7 @@
     /* ===== CONFIG ===== */
     const REPOSITORY_RAW_BASE_URL = 'https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main';
     const COLOR_DATABASE_URL = REPOSITORY_RAW_BASE_URL + '/public/data/colors.json';
+    const ICON_INDEX_URL = REPOSITORY_RAW_BASE_URL + '/public/data/icon-index.json';
     const LOG_PREFIX = '[Color Detector Pro]';
     const DETECTION_MODE_EYEDROPPER = 'eyedropper';
     const DETECTION_MODE_COMPUTED = 'computed';
@@ -10,6 +11,15 @@
     const ASSET_DOWNLOAD_TIMEOUT_MS = 45000;
     const SITE_SCAN_ELEMENT_LIMIT = 2500;
     const SITE_SCAN_BATCH_SIZE = 120;
+    const SVG_GEOMETRY_ATTRIBUTES = Object.freeze({
+        path: ['d'],
+        circle: ['cx', 'cy', 'r'],
+        rect: ['x', 'y', 'width', 'height', 'rx', 'ry'],
+        line: ['x1', 'y1', 'x2', 'y2'],
+        ellipse: ['cx', 'cy', 'rx', 'ry'],
+        polyline: ['points'],
+        polygon: ['points'],
+    });
     const INSPECT_CSS_PROPERTIES = Object.freeze([
         'font-family',
         'font-size',
@@ -74,6 +84,10 @@
     let currentAssetHighlight = null;
     let currentPickedAsset = null;
     let pageAssets = [];
+    let iconIndexByHash = new Map();
+    let iconLibraryNames = new Set();
+    let iconIndexLoadPromise = null;
+    let iconMatchCache = new WeakMap();
     let isScanningAssets = false;
     let isDownloadingAssets = false;
     let isInspectActive = false;

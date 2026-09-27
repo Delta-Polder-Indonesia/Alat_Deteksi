@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/Delta-Polder-Indonesia/Alat_Deteksi
-// @version      3.0.0
+// @version      3.1.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -25,6 +25,7 @@
     /* ===== CONFIG ===== */
     const REPOSITORY_RAW_BASE_URL = 'https://raw.githubusercontent.com/Delta-Polder-Indonesia/Alat_Deteksi/main';
     const COLOR_DATABASE_URL = REPOSITORY_RAW_BASE_URL + '/public/data/colors.json';
+    const ICON_INDEX_URL = REPOSITORY_RAW_BASE_URL + '/public/data/icon-index.json';
     const LOG_PREFIX = '[Color Detector Pro]';
     const DETECTION_MODE_EYEDROPPER = 'eyedropper';
     const DETECTION_MODE_COMPUTED = 'computed';
@@ -34,6 +35,15 @@
     const ASSET_DOWNLOAD_TIMEOUT_MS = 45000;
     const SITE_SCAN_ELEMENT_LIMIT = 2500;
     const SITE_SCAN_BATCH_SIZE = 120;
+    const SVG_GEOMETRY_ATTRIBUTES = Object.freeze({
+        path: ['d'],
+        circle: ['cx', 'cy', 'r'],
+        rect: ['x', 'y', 'width', 'height', 'rx', 'ry'],
+        line: ['x1', 'y1', 'x2', 'y2'],
+        ellipse: ['cx', 'cy', 'rx', 'ry'],
+        polyline: ['points'],
+        polygon: ['points'],
+    });
     const INSPECT_CSS_PROPERTIES = Object.freeze([
         'font-family',
         'font-size',
@@ -98,6 +108,10 @@
     let currentAssetHighlight = null;
     let currentPickedAsset = null;
     let pageAssets = [];
+    let iconIndexByHash = new Map();
+    let iconLibraryNames = new Set();
+    let iconIndexLoadPromise = null;
+    let iconMatchCache = new WeakMap();
     let isScanningAssets = false;
     let isDownloadingAssets = false;
     let isInspectActive = false;
@@ -273,6 +287,7 @@
         #cdp-tabs {
             width: 100%;
             min-height: 0;
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -283,6 +298,10 @@
         }
         #cdp-tabs::-webkit-scrollbar {
             display: none;
+        }
+        .cdp-side-btn {
+            flex-shrink: 0;
+            margin-top: 4px;
         }
         .cdp-tab.cdp-tab-active {
             color: #fff;
@@ -804,6 +823,10 @@
             font-size: 11px;
             line-height: 1.4;
             word-break: break-word;
+        }
+        .cdp-asset-icon-match {
+            color: #3fb950;
+            font-weight: 600;
         }
         .cdp-asset-card-actions {
             display: flex;
@@ -1742,6 +1765,64 @@
         }
     }
 
+    function svgGeometrySignature(svg) {
+        if (!svg || typeof svg.querySelectorAll !== 'function') return '';
+        const selector = Object.keys(SVG_GEOMETRY_ATTRIBUTES).join(',');
+        return Array.from(svg.querySelectorAll(selector)).map(element => {
+            const tag = element.tagName.toLowerCase();
+            const attributes = SVG_GEOMETRY_ATTRIBUTES[tag]
+                .map(name => `${name}=${element.getAttribute(name) || ''}`)
+                .join(';');
+            return `${tag}:${attributes}`;
+        }).join('|');
+    }
+
+    function svgElementFromCode(svgCode) {
+        if (!svgCode) return null;
+        try {
+            const doc = new DOMParser().parseFromString(svgCode, 'image/svg+xml');
+            if (doc.querySelector('parsererror')) return null;
+            return doc.documentElement && doc.documentElement.tagName.toLowerCase() === 'svg'
+                ? doc.documentElement
+                : null;
+        } catch (err) {
+            logError('svgElementFromCode', err);
+            return null;
+        }
+    }
+
+    function fnv1aHash(text) {
+        let hash = 0x811c9dc5;
+        for (let index = 0; index < text.length; index += 1) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 0x01000193) >>> 0;
+        }
+        return hash.toString(16).padStart(8, '0');
+    }
+
+    function identifyBundledIcon(asset) {
+        if (!asset || iconIndexByHash.size === 0) return [];
+        const svgElement = asset.element && asset.element.tagName &&
+            asset.element.tagName.toLowerCase() === 'svg' ? asset.element : null;
+        if (svgElement && iconMatchCache.has(svgElement)) {
+            return iconMatchCache.get(svgElement);
+        }
+
+        let signature = svgElement ? svgGeometrySignature(svgElement) : '';
+        if (!signature && asset.svgCode) {
+            signature = svgGeometrySignature(svgElementFromCode(asset.svgCode));
+        }
+        let matches = signature ? (iconIndexByHash.get(fnv1aHash(signature)) || []) : [];
+
+        if (matches.length === 0) {
+            const candidate = String(asset.name || '').toLowerCase().replace(/\.svg$/i, '');
+            if (iconLibraryNames.has(candidate)) matches = [candidate];
+        }
+        const result = matches.slice();
+        if (svgElement) iconMatchCache.set(svgElement, result);
+        return result;
+    }
+
     function elementLabel(el) {
         if (!el || typeof el.getAttribute !== 'function') return '';
         return el.getAttribute('alt') || el.getAttribute('aria-label') ||
@@ -1860,6 +1941,7 @@
             sizeLabel: 'Unknown',
             thumbnailUrl: '',
             mime: '',
+            iconMatches: [],
         }, base);
         asset.typeLabel = asset.typeLabel || assetTypeLabel(asset);
         asset.badge = asset.badge || assetBadge(asset);
@@ -1872,6 +1954,7 @@
             else if (isDataUri(asset.url)) asset.sizeBytes = dataUriByteLength(asset.url);
         }
         asset.sizeLabel = asset.sizeBytes === null ? asset.sizeLabel : bytesToLabel(asset.sizeBytes);
+        asset.iconMatches = identifyBundledIcon(asset);
         return asset;
     }
 
@@ -2016,6 +2099,48 @@
                 reject(err);
             }
         });
+    }
+
+    function normalizeIconIndex(data) {
+        if (!data || typeof data !== 'object' || !data.hashes || typeof data.hashes !== 'object') {
+            throw new Error('Unexpected icon index shape');
+        }
+        const nextIndex = new Map();
+        const nextNames = new Set();
+        Object.entries(data.hashes).forEach(([hash, names]) => {
+            if (!/^[0-9a-f]{8}$/i.test(hash) || !Array.isArray(names)) return;
+            const validNames = names
+                .map(name => String(name || '').trim())
+                .filter(name => /^[a-z0-9-]+$/.test(name));
+            if (validNames.length === 0) return;
+            nextIndex.set(hash.toLowerCase(), validNames);
+            validNames.forEach(name => nextNames.add(name));
+        });
+        if (nextIndex.size === 0) throw new Error('Icon index did not contain valid entries');
+        iconIndexByHash = nextIndex;
+        iconLibraryNames = nextNames;
+        iconMatchCache = new WeakMap();
+        return nextNames.size;
+    }
+
+    function loadIconIndex() {
+        if (iconIndexByHash.size > 0) return Promise.resolve(iconLibraryNames.size);
+        if (iconIndexLoadPromise) return iconIndexLoadPromise;
+        iconIndexLoadPromise = gmRequest({
+            method: 'GET',
+            url: ICON_INDEX_URL,
+            timeout: ASSET_FETCH_TIMEOUT_MS,
+        }).then(response => {
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error('HTTP status ' + response.status + ' for ' + ICON_INDEX_URL);
+            }
+            return normalizeIconIndex(JSON.parse(response.responseText));
+        }).catch(err => {
+            logError('loadIconIndex', err);
+            iconIndexLoadPromise = null;
+            return 0;
+        });
+        return iconIndexLoadPromise;
     }
 
     async function fetchAssetText(url) {
@@ -2232,6 +2357,7 @@
         pageAssets = [];
         renderCurrentTab();
         try {
+            await loadIconIndex();
             pageAssets = collectPageAssetCandidates();
             for (const asset of pageAssets) {
                 await fetchAssetHeadMeta(asset);
@@ -2546,6 +2672,7 @@
         harmony: '<circle cx="15" cy="9" r="7"/><circle cx="9" cy="15" r="7"/>',
         assets: '<path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect x="8" y="2" width="14" height="14" rx="2"/>',
         info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        move: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
     });
 
     function navigationIcon(name, size = 20) {
@@ -2606,6 +2733,9 @@
                         <span class="cdp-tab-label">Site Info</span>
                     </button>
                 </nav>
+                <button id="cdp-side-btn" class="cdp-rail-btn cdp-side-btn" type="button" title="Move sidebar to left" aria-label="Move sidebar to left">
+                    ${navigationIcon('move')}
+                </button>
             </aside>
 
             <main id="cdp-sidebar-content" aria-hidden="true">
@@ -2613,7 +2743,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v3.0.0</span>
+                    <span id="cdp-version">v3.1.0</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
@@ -2780,6 +2910,9 @@
         if (!assetBtn) return;
         assetBtn.className = isAssetPickerActive ? 'cdp-active' : 'cdp-inactive';
         assetBtn.textContent = isAssetPickerActive ? 'Picking assets' : 'Asset Picker';
+        assetBtn.title = isAssetPickerActive
+            ? (iconIndexByHash.size > 0 ? 'Hover an asset; known SVG icons are identified automatically' : 'Loading icon matcher...')
+            : 'Pick page assets and identify known SVG icons';
     }
 
     function setAssetPickerActive(active) {
@@ -2789,6 +2922,16 @@
             if (isInspectActive) setInspectActive(false);
             if (isDetecting) setDetecting(false);
             hideAssetActionPopover();
+            loadIconIndex().then(count => {
+                if (!isAssetPickerActive) return;
+                updateAssetPickerControls();
+                if (count > 0) {
+                    showNotification(count + ' local icons ready', 'success');
+                } else {
+                    const button = document.getElementById('cdp-asset-btn');
+                    if (button) button.title = 'Icon matcher unavailable; asset picking remains active';
+                }
+            });
             showNotification('Asset Picker active', 'info');
             return;
         }
@@ -2843,6 +2986,12 @@
         sidebarSide = nextSide;
         panel.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
         panel.setAttribute('data-side', sidebarSide);
+        const sideBtn = document.getElementById('cdp-side-btn');
+        if (sideBtn) {
+            const targetSide = sidebarSide === 'left' ? 'right' : 'left';
+            sideBtn.title = 'Move sidebar to ' + targetSide;
+            sideBtn.setAttribute('aria-label', 'Move sidebar to ' + targetSide);
+        }
         safeSetValue(STORAGE_KEYS.sidebarSide, sidebarSide);
         if (shouldNotify && sideChanged) {
             showNotification('Sidebar: ' + (sidebarSide === 'left' ? 'Left' : 'Right'), 'info');
@@ -2886,6 +3035,7 @@
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
         const colorNav = document.getElementById('cdp-color-nav');
+        const sideBtn = document.getElementById('cdp-side-btn');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
@@ -2906,6 +3056,11 @@
         colorNav.addEventListener('click', () => {
             setPanelOpen(panel, true);
             detectBtn.focus();
+        });
+
+        // Move sidebar; tetap tersedia saat konten sidebar ditutup.
+        sideBtn.addEventListener('click', () => {
+            setPanelSide(panel, sidebarSide === 'left' ? 'right' : 'left');
         });
 
         // Detect
@@ -3090,6 +3245,11 @@
         if (tr.bottom > window.innerHeight) tip.style.top = (e.clientY - tr.height - 10) + 'px';
     }
 
+    function assetIconMatchLabel(asset) {
+        if (!asset || !Array.isArray(asset.iconMatches) || asset.iconMatches.length === 0) return '';
+        return asset.iconMatches.join(' / ');
+    }
+
     function clearAssetHighlight() {
         if (currentAssetHighlight) {
             currentAssetHighlight.classList.remove('cdp-element-highlight');
@@ -3119,8 +3279,13 @@
         icon.classList.add('cdp-asset-tooltip-icon');
         icon.style.background = '';
         icon.textContent = asset.badge;
-        document.getElementById('cdp-tooltip-name').textContent = asset.typeLabel;
-        document.getElementById('cdp-tooltip-hex').textContent = asset.name;
+        const iconMatch = assetIconMatchLabel(asset);
+        document.getElementById('cdp-tooltip-name').textContent = iconMatch
+            ? 'Local icon: ' + iconMatch
+            : asset.typeLabel;
+        document.getElementById('cdp-tooltip-hex').textContent = iconMatch
+            ? asset.typeLabel + ' - exact geometry match'
+            : asset.name;
         tip.classList.add('cdp-tooltip-visible');
         positionTooltip(e, tip);
     }
@@ -3128,8 +3293,13 @@
     function showAssetActionPopover(asset, clientX, clientY) {
         currentPickedAsset = asset;
         const popover = document.getElementById('cdp-asset-action-popover');
-        document.getElementById('cdp-asset-action-title').textContent = asset.typeLabel;
-        document.getElementById('cdp-asset-action-meta').textContent = asset.name;
+        const iconMatch = assetIconMatchLabel(asset);
+        document.getElementById('cdp-asset-action-title').textContent = iconMatch
+            ? 'Local icon: ' + iconMatch
+            : asset.typeLabel;
+        document.getElementById('cdp-asset-action-meta').textContent = iconMatch
+            ? asset.typeLabel + ' - exact geometry match'
+            : asset.name;
         document.getElementById('cdp-asset-copy-svg-btn').disabled = !assetCanCopySvg(asset);
         popover.classList.remove('cdp-hidden');
         popover.style.left = clientX + 12 + 'px';
@@ -3624,6 +3794,10 @@
             pageAssets.forEach(asset => {
                 const checked = asset.selected ? ' checked' : '';
                 const copyDisabled = assetCanCopySvg(asset) ? '' : ' disabled';
+                const iconMatch = assetIconMatchLabel(asset);
+                const matchMeta = iconMatch
+                    ? `<div class="cdp-asset-meta cdp-asset-icon-match">Local icon: ${escapeHtml(iconMatch)}</div>`
+                    : '';
                 html += `
                     <div class="cdp-asset-card" data-asset-id="${escapeHtml(asset.id)}">
                         <div class="cdp-asset-thumb">${renderAssetThumbnail(asset)}</div>
@@ -3633,6 +3807,7 @@
                                 <span class="cdp-asset-name">${escapeHtml(asset.name)}</span>
                             </label>
                             <div class="cdp-asset-meta">${escapeHtml(asset.typeLabel)}</div>
+                            ${matchMeta}
                             <div class="cdp-asset-meta">${escapeHtml(asset.dimensions)} - ${escapeHtml(asset.sizeLabel)}</div>
                             <div class="cdp-asset-card-actions">
                                 <button class="cdp-asset-small-btn cdp-asset-copy-svg" data-asset-id="${escapeHtml(asset.id)}" type="button"${copyDisabled}>Copy SVG</button>

@@ -521,6 +521,64 @@
         }
     }
 
+    function svgGeometrySignature(svg) {
+        if (!svg || typeof svg.querySelectorAll !== 'function') return '';
+        const selector = Object.keys(SVG_GEOMETRY_ATTRIBUTES).join(',');
+        return Array.from(svg.querySelectorAll(selector)).map(element => {
+            const tag = element.tagName.toLowerCase();
+            const attributes = SVG_GEOMETRY_ATTRIBUTES[tag]
+                .map(name => `${name}=${element.getAttribute(name) || ''}`)
+                .join(';');
+            return `${tag}:${attributes}`;
+        }).join('|');
+    }
+
+    function svgElementFromCode(svgCode) {
+        if (!svgCode) return null;
+        try {
+            const doc = new DOMParser().parseFromString(svgCode, 'image/svg+xml');
+            if (doc.querySelector('parsererror')) return null;
+            return doc.documentElement && doc.documentElement.tagName.toLowerCase() === 'svg'
+                ? doc.documentElement
+                : null;
+        } catch (err) {
+            logError('svgElementFromCode', err);
+            return null;
+        }
+    }
+
+    function fnv1aHash(text) {
+        let hash = 0x811c9dc5;
+        for (let index = 0; index < text.length; index += 1) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 0x01000193) >>> 0;
+        }
+        return hash.toString(16).padStart(8, '0');
+    }
+
+    function identifyBundledIcon(asset) {
+        if (!asset || iconIndexByHash.size === 0) return [];
+        const svgElement = asset.element && asset.element.tagName &&
+            asset.element.tagName.toLowerCase() === 'svg' ? asset.element : null;
+        if (svgElement && iconMatchCache.has(svgElement)) {
+            return iconMatchCache.get(svgElement);
+        }
+
+        let signature = svgElement ? svgGeometrySignature(svgElement) : '';
+        if (!signature && asset.svgCode) {
+            signature = svgGeometrySignature(svgElementFromCode(asset.svgCode));
+        }
+        let matches = signature ? (iconIndexByHash.get(fnv1aHash(signature)) || []) : [];
+
+        if (matches.length === 0) {
+            const candidate = String(asset.name || '').toLowerCase().replace(/\.svg$/i, '');
+            if (iconLibraryNames.has(candidate)) matches = [candidate];
+        }
+        const result = matches.slice();
+        if (svgElement) iconMatchCache.set(svgElement, result);
+        return result;
+    }
+
     function elementLabel(el) {
         if (!el || typeof el.getAttribute !== 'function') return '';
         return el.getAttribute('alt') || el.getAttribute('aria-label') ||
@@ -639,6 +697,7 @@
             sizeLabel: 'Unknown',
             thumbnailUrl: '',
             mime: '',
+            iconMatches: [],
         }, base);
         asset.typeLabel = asset.typeLabel || assetTypeLabel(asset);
         asset.badge = asset.badge || assetBadge(asset);
@@ -651,6 +710,7 @@
             else if (isDataUri(asset.url)) asset.sizeBytes = dataUriByteLength(asset.url);
         }
         asset.sizeLabel = asset.sizeBytes === null ? asset.sizeLabel : bytesToLabel(asset.sizeBytes);
+        asset.iconMatches = identifyBundledIcon(asset);
         return asset;
     }
 
@@ -795,6 +855,48 @@
                 reject(err);
             }
         });
+    }
+
+    function normalizeIconIndex(data) {
+        if (!data || typeof data !== 'object' || !data.hashes || typeof data.hashes !== 'object') {
+            throw new Error('Unexpected icon index shape');
+        }
+        const nextIndex = new Map();
+        const nextNames = new Set();
+        Object.entries(data.hashes).forEach(([hash, names]) => {
+            if (!/^[0-9a-f]{8}$/i.test(hash) || !Array.isArray(names)) return;
+            const validNames = names
+                .map(name => String(name || '').trim())
+                .filter(name => /^[a-z0-9-]+$/.test(name));
+            if (validNames.length === 0) return;
+            nextIndex.set(hash.toLowerCase(), validNames);
+            validNames.forEach(name => nextNames.add(name));
+        });
+        if (nextIndex.size === 0) throw new Error('Icon index did not contain valid entries');
+        iconIndexByHash = nextIndex;
+        iconLibraryNames = nextNames;
+        iconMatchCache = new WeakMap();
+        return nextNames.size;
+    }
+
+    function loadIconIndex() {
+        if (iconIndexByHash.size > 0) return Promise.resolve(iconLibraryNames.size);
+        if (iconIndexLoadPromise) return iconIndexLoadPromise;
+        iconIndexLoadPromise = gmRequest({
+            method: 'GET',
+            url: ICON_INDEX_URL,
+            timeout: ASSET_FETCH_TIMEOUT_MS,
+        }).then(response => {
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error('HTTP status ' + response.status + ' for ' + ICON_INDEX_URL);
+            }
+            return normalizeIconIndex(JSON.parse(response.responseText));
+        }).catch(err => {
+            logError('loadIconIndex', err);
+            iconIndexLoadPromise = null;
+            return 0;
+        });
+        return iconIndexLoadPromise;
     }
 
     async function fetchAssetText(url) {
@@ -1011,6 +1113,7 @@
         pageAssets = [];
         renderCurrentTab();
         try {
+            await loadIconIndex();
             pageAssets = collectPageAssetCandidates();
             for (const asset of pageAssets) {
                 await fetchAssetHeadMeta(asset);
