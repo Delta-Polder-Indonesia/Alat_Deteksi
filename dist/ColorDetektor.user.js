@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/JD-YH03D/release
-// @version      2.5.0
+// @version      2.6.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -31,6 +31,20 @@
     const COLOR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     const ASSET_FETCH_TIMEOUT_MS = 15000;
     const ASSET_DOWNLOAD_TIMEOUT_MS = 45000;
+    const SITE_SCAN_ELEMENT_LIMIT = 2500;
+    const SITE_SCAN_BATCH_SIZE = 120;
+    const INSPECT_CSS_PROPERTIES = Object.freeze([
+        'font-family',
+        'font-size',
+        'font-weight',
+        'line-height',
+        'color',
+        'background',
+        'border-radius',
+        'box-shadow',
+        'padding',
+        'margin',
+    ]);
     const STORAGE_KEYS = Object.freeze({
         history: 'cdp_detection_history',
         panelPosition: 'cdp_panel_position',
@@ -85,6 +99,20 @@
     let pageAssets = [];
     let isScanningAssets = false;
     let isDownloadingAssets = false;
+    let isInspectActive = false;
+    let isInspectFrozen = false;
+    let currentInspectHighlight = null;
+    let currentInspectData = null;
+    let siteInfo = {
+        fonts: [],
+        colors: [],
+        tokens: [],
+        technologies: [],
+        scannedCount: 0,
+        limitReached: false,
+        scannedAt: null,
+    };
+    let isScanningSiteInfo = false;
     /* ===== STYLES ===== */
     GM_addStyle(`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -263,7 +291,8 @@
             animation: cdp-pulse 2s infinite;
         }
         #cdp-mode-btn,
-        #cdp-asset-btn {
+        #cdp-asset-btn,
+        #cdp-inspect-btn {
             min-width: 68px;
             padding: 10px 12px;
             border: 1px solid var(--cdp-border);
@@ -276,8 +305,12 @@
         #cdp-asset-btn {
             min-width: 96px;
         }
+        #cdp-inspect-btn {
+            min-width: 76px;
+        }
         #cdp-mode-btn:hover,
-        #cdp-asset-btn:hover {
+        #cdp-asset-btn:hover,
+        #cdp-inspect-btn:hover {
             border-color: var(--cdp-primary);
             color: var(--cdp-text-primary);
         }
@@ -291,7 +324,8 @@
             border-color: var(--cdp-border);
             color: var(--cdp-text-secondary);
         }
-        #cdp-asset-btn.cdp-active {
+        #cdp-asset-btn.cdp-active,
+        #cdp-inspect-btn.cdp-active {
             background: rgba(72,187,120,0.12);
             border-color: rgba(72,187,120,0.35);
             color: var(--cdp-success);
@@ -394,7 +428,7 @@
             flex: 1; padding: 11px 0;
             border: none; background: transparent;
             color: var(--cdp-text-muted);
-            font-family: inherit; font-size: 11px; font-weight: 600;
+            font-family: inherit; font-size: 10px; font-weight: 600;
             cursor: pointer; transition: var(--cdp-transition);
             position: relative;
             display: flex; align-items: center; justify-content: center;
@@ -654,6 +688,112 @@
             border-color: var(--cdp-primary);
         }
 
+        /* ----- SITE INFO ----- */
+        .cdp-site-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: rgba(102,126,234,0.04);
+            border-bottom: 1px solid var(--cdp-border);
+        }
+        .cdp-site-action {
+            padding: 7px 10px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 8px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--cdp-transition);
+        }
+        .cdp-site-action:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+            background: rgba(102,126,234,0.16);
+        }
+        .cdp-site-action:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .cdp-site-status {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            margin-left: auto;
+        }
+        .cdp-site-section {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding-bottom: 10px;
+        }
+        .cdp-site-section-body {
+            padding: 10px 18px 0;
+        }
+        .cdp-site-list {
+            display: grid;
+            gap: 8px;
+        }
+        .cdp-site-row {
+            border: 1px solid var(--cdp-border);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+            padding: 9px 10px;
+        }
+        .cdp-site-row-title {
+            color: var(--cdp-text-primary);
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .cdp-site-row-meta {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            line-height: 1.4;
+            margin-top: 3px;
+            word-break: break-word;
+        }
+        .cdp-site-color-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .cdp-site-color-chip {
+            min-height: 54px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 10px;
+            padding: 7px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            box-shadow: inset 0 0 0 999px rgba(0,0,0,0.02);
+        }
+        .cdp-site-color-chip span {
+            display: inline-block;
+            background: rgba(15,15,35,0.72);
+            border-radius: 6px;
+            padding: 2px 5px;
+            color: #fff;
+            font-size: 10px;
+            font-family: 'SF Mono', monospace;
+            line-height: 1.35;
+        }
+        .cdp-token-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 8px;
+            align-items: center;
+        }
+        .cdp-token-row code {
+            color: var(--cdp-text-primary);
+            font-family: 'SF Mono', monospace;
+            font-size: 11px;
+            word-break: break-word;
+        }
+
         /* ----- COLOR LIST ----- */
         #cdp-color-list-container {
             flex: 1; overflow-y: auto; min-height: 0;
@@ -855,6 +995,89 @@
             background: rgba(102,126,234,0.08);
         }
 
+        /* ----- INSPECT CARD ----- */
+        #cdp-inspect-card {
+            position: fixed;
+            width: 320px;
+            max-width: calc(100vw - 24px);
+            padding: 12px;
+            background: rgba(15,15,35,0.98);
+            border: 1px solid var(--cdp-border);
+            border-radius: 12px;
+            z-index: 2147483647;
+            box-shadow: 0 10px 36px rgba(0,0,0,0.45);
+            font-family: 'Inter', sans-serif;
+            color: var(--cdp-text-primary);
+        }
+        #cdp-inspect-card.cdp-hidden {
+            display: none;
+        }
+        #cdp-inspect-card-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        #cdp-inspect-card-title {
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        #cdp-inspect-card-subtitle {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        #cdp-inspect-card-state {
+            color: var(--cdp-success);
+            border: 1px solid rgba(72,187,120,0.35);
+            border-radius: 999px;
+            padding: 2px 7px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        #cdp-inspect-card-body {
+            display: grid;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .cdp-inspect-row {
+            display: grid;
+            grid-template-columns: 94px minmax(0, 1fr);
+            gap: 8px;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+        .cdp-inspect-row span {
+            color: var(--cdp-text-muted);
+        }
+        .cdp-inspect-row strong {
+            color: var(--cdp-text-secondary);
+            font-family: 'SF Mono', monospace;
+            font-weight: 600;
+            word-break: break-word;
+        }
+        #cdp-inspect-copy-btn {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 8px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--cdp-transition);
+        }
+        #cdp-inspect-copy-btn:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+            background: rgba(102,126,234,0.16);
+        }
+
         /* ----- HIGHLIGHT ----- */
         .cdp-element-highlight {
             outline: 2px dashed var(--cdp-primary) !important;
@@ -993,7 +1216,8 @@
 
     function isValidTabName(tabName) {
         return tabName === 'database' || tabName === 'history' ||
-            tabName === 'palette' || tabName === 'harmony' || tabName === 'assets';
+            tabName === 'palette' || tabName === 'harmony' ||
+            tabName === 'assets' || tabName === 'site-info';
     }
 
     function loadStoredActiveTab() {
@@ -1961,6 +2185,286 @@
             if (activeTab === 'assets') renderCurrentTab();
         }
     }
+
+    function elementDescriptor(el) {
+        if (!el || !el.tagName) return 'element';
+        const tag = el.tagName.toLowerCase();
+        const id = el.id ? '#' + cleanFilenamePart(el.id) : '';
+        const classText = typeof el.className === 'string'
+            ? el.className
+            : (el.getAttribute && el.getAttribute('class')) || '';
+        const classes = classText.trim().split(/\s+/).filter(Boolean).slice(0, 3)
+            .map(name => '.' + cleanFilenamePart(name)).join('');
+        return tag + id + classes;
+    }
+
+    function inspectCssValue(style, property) {
+        if (property === 'background') {
+            const bgImage = style.backgroundImage;
+            if (bgImage && bgImage !== 'none') return style.background;
+            return style.backgroundColor;
+        }
+        return style.getPropertyValue(property) || '';
+    }
+
+    function inspectDataFromElement(el) {
+        const style = window.getComputedStyle(el);
+        const rows = INSPECT_CSS_PROPERTIES.map(property => ({
+            property,
+            value: inspectCssValue(style, property).trim() || 'initial',
+        }));
+        return {
+            element: el,
+            title: elementDescriptor(el),
+            subtitle: rectDimensions(el),
+            rows,
+            cssText: rows.map(row => `${row.property}: ${row.value};`).join('\n'),
+        };
+    }
+
+    function normalizeFontName(name) {
+        return String(name || '')
+            .trim()
+            .replace(/^['"]|['"]$/g, '')
+            .trim();
+    }
+
+    function splitFontFamily(value) {
+        if (!value) return [];
+        return String(value).split(',')
+            .map(normalizeFontName)
+            .filter(Boolean);
+    }
+
+    function elementTextSample(el) {
+        if (!el || !el.textContent) return '';
+        return el.textContent.replace(/\s+/g, ' ').trim().slice(0, 90);
+    }
+
+    function normalizeCssColor(value) {
+        if (!value || value === 'transparent') return '';
+        const match = /rgba?\(([^)]+)\)/i.exec(value);
+        if (!match) return '';
+        const parts = match[1].split(',').map(part => part.trim());
+        if (parts.length < 3) return '';
+        const alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+        if (Number.isFinite(alpha) && alpha <= 0) return '';
+        const channels = parts.slice(0, 3).map(part => {
+            if (part.endsWith('%')) {
+                return Math.round(clampNumber(parseFloat(part), 0, 100) * 2.55);
+            }
+            return Math.round(clampNumber(parseFloat(part), 0, 255));
+        });
+        if (channels.some(channel => !Number.isFinite(channel))) return '';
+        return '#' + channels.map(channel => channel.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    function scanClassEvidence(el, evidence) {
+        const classText = typeof el.className === 'string'
+            ? el.className
+            : (el.getAttribute && el.getAttribute('class')) || '';
+        if (!classText) return;
+        const classes = classText.split(/\s+/).filter(Boolean);
+        classes.forEach(name => {
+            if (/^(flex|grid|block|inline-block|hidden|container|text-|bg-|p[trblxy]?-[\w/.-]+|m[trblxy]?-[\w/.-]+|w-[\w/.-]+|h-[\w/.-]+|rounded|shadow|font-|items-|justify-|gap-|space-|border-|leading-|tracking-)/.test(name)) {
+                evidence.tailwind += 1;
+            }
+            if (/^(container|row|col(?:-|$)|btn(?:-|$)|navbar|card|alert|modal|badge|d-flex|text-|bg-|mt-|mb-|ms-|me-|pt-|pb-|ps-|pe-)/.test(name)) {
+                evidence.bootstrap += 1;
+            }
+        });
+    }
+
+    function scanDomFrameworkEvidence(el, evidence) {
+        try {
+            if (Object.keys(el).some(key => key.startsWith('__reactFiber') || key.startsWith('__reactProps'))) {
+                evidence.reactDom += 1;
+            }
+        } catch (err) {
+            logError('scanDomFrameworkEvidence React', err);
+        }
+        if (el.hasAttribute && (el.hasAttribute('data-v-app') || el.hasAttribute('data-reactroot'))) {
+            if (el.hasAttribute('data-v-app')) evidence.vueDom += 1;
+            if (el.hasAttribute('data-reactroot')) evidence.reactDom += 1;
+        }
+        if (el.attributes) {
+            for (const attr of el.attributes) {
+                if (/^data-v-[a-z0-9]+$/i.test(attr.name)) {
+                    evidence.vueDom += 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    function addTechnology(items, name, evidence, confidence) {
+        if (!evidence) return;
+        items.push({ name, evidence, confidence });
+    }
+
+    function confidenceFromCount(count, high, medium) {
+        if (count >= high) return 'High';
+        if (count >= medium) return 'Medium';
+        return 'Low';
+    }
+
+    function detectTechnologies(evidence) {
+        const items = [];
+        addTechnology(items, 'Tailwind CSS', `${evidence.tailwind} utility-like classes`,
+            evidence.tailwind >= 8 ? confidenceFromCount(evidence.tailwind, 80, 25) : '');
+        addTechnology(items, 'Bootstrap', `${evidence.bootstrap} Bootstrap-like classes`,
+            evidence.bootstrap >= 4 ? confidenceFromCount(evidence.bootstrap, 45, 15) : '');
+        addTechnology(items, 'React', evidence.reactGlobal ? 'React global detected' : `${evidence.reactDom} React DOM markers`,
+            evidence.reactGlobal || evidence.reactDom > 0 ? (evidence.reactGlobal ? 'High' : 'Medium') : '');
+        addTechnology(items, 'Vue', evidence.vueGlobal ? 'Vue global detected' : `${evidence.vueDom} Vue DOM markers`,
+            evidence.vueGlobal || evidence.vueDom > 0 ? (evidence.vueGlobal ? 'High' : 'Medium') : '');
+        addTechnology(items, 'jQuery', evidence.jqueryGlobal, evidence.jqueryGlobal ? 'High' : '');
+        addTechnology(items, 'Next.js', evidence.nextEvidence, evidence.nextEvidence ? 'High' : '');
+        if (evidence.generator) {
+            addTechnology(items, 'CMS or generator', evidence.generator, 'Medium');
+        }
+        return items.filter(item => item.confidence);
+    }
+
+    function readRootCustomProperties() {
+        const tokens = [];
+        try {
+            const rootStyle = window.getComputedStyle(document.documentElement);
+            for (let i = 0; i < rootStyle.length; i += 1) {
+                const name = rootStyle[i];
+                if (!name || !name.startsWith('--')) continue;
+                const value = rootStyle.getPropertyValue(name).trim();
+                if (!value) continue;
+                tokens.push({ name, value });
+            }
+        } catch (err) {
+            logError('readRootCustomProperties', err);
+        }
+        return tokens.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function getFontFaceStatusMap() {
+        const map = new Map();
+        try {
+            if (document.fonts && typeof document.fonts.forEach === 'function') {
+                document.fonts.forEach(face => {
+                    const family = normalizeFontName(face.family);
+                    if (!family) return;
+                    map.set(family.toLowerCase(), face.status || 'known');
+                });
+            }
+        } catch (err) {
+            logError('getFontFaceStatusMap', err);
+        }
+        return map;
+    }
+
+    function waitForNextScanBatch() {
+        return new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    async function scanSiteInfo() {
+        if (isScanningSiteInfo) return;
+        isScanningSiteInfo = true;
+        siteInfo = {
+            fonts: [],
+            colors: [],
+            tokens: [],
+            technologies: [],
+            scannedCount: 0,
+            limitReached: false,
+            scannedAt: null,
+        };
+        renderCurrentTab();
+        try {
+            const fontMap = new Map();
+            const colorMap = new Map();
+            const evidence = {
+                tailwind: 0,
+                bootstrap: 0,
+                reactDom: 0,
+                vueDom: 0,
+                reactGlobal: !!window.React,
+                vueGlobal: !!window.Vue,
+                jqueryGlobal: window.jQuery && window.jQuery.fn
+                    ? 'jQuery ' + window.jQuery.fn.jquery
+                    : '',
+                nextEvidence: window.__NEXT_DATA__ || document.getElementById('__next') || document.querySelector('script[src*="/_next/"]')
+                    ? 'Next.js marker detected'
+                    : '',
+                generator: '',
+            };
+            const generatorMeta = document.querySelector('meta[name="generator"], meta[property="generator"]');
+            if (generatorMeta) evidence.generator = generatorMeta.getAttribute('content') || 'Generator meta tag detected';
+
+            const elements = document.body ? document.body.getElementsByTagName('*') : [];
+            const limit = Math.min(elements.length, SITE_SCAN_ELEMENT_LIMIT);
+            siteInfo.limitReached = elements.length > limit;
+            const fontFaceStatus = getFontFaceStatusMap();
+
+            for (let index = 0; index < limit; index += SITE_SCAN_BATCH_SIZE) {
+                const end = Math.min(index + SITE_SCAN_BATCH_SIZE, limit);
+                for (let i = index; i < end; i += 1) {
+                    const el = elements[i];
+                    if (!el || isCdpElement(el)) continue;
+                    let style = null;
+                    try {
+                        style = window.getComputedStyle(el);
+                    } catch (err) {
+                        logError('scanSiteInfo computed style', err);
+                        continue;
+                    }
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
+
+                    scanClassEvidence(el, evidence);
+                    scanDomFrameworkEvidence(el, evidence);
+
+                    const sample = elementTextSample(el);
+                    splitFontFamily(style.fontFamily).forEach(font => {
+                        const key = font.toLowerCase();
+                        const current = fontMap.get(key) || {
+                            name: font,
+                            count: 0,
+                            sample: '',
+                            status: fontFaceStatus.get(key) || '',
+                        };
+                        current.count += 1;
+                        if (!current.sample && sample) current.sample = sample;
+                        if (!current.status && fontFaceStatus.has(key)) current.status = fontFaceStatus.get(key);
+                        fontMap.set(key, current);
+                    });
+
+                    ['color', 'backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(prop => {
+                        const hex = normalizeCssColor(style[prop]);
+                        if (!hex) return;
+                        const current = colorMap.get(hex) || { hex, count: 0 };
+                        current.count += 1;
+                        colorMap.set(hex, current);
+                    });
+                }
+                siteInfo.scannedCount = end;
+                if (activeTab === 'site-info') renderCurrentTab();
+                await waitForNextScanBatch();
+            }
+
+            siteInfo = {
+                fonts: Array.from(fontMap.values()).sort((a, b) => b.count - a.count),
+                colors: Array.from(colorMap.values()).sort((a, b) => b.count - a.count),
+                tokens: readRootCustomProperties(),
+                technologies: detectTechnologies(evidence),
+                scannedCount: limit,
+                limitReached: elements.length > limit,
+                scannedAt: new Date().toLocaleTimeString(),
+            };
+            showToast('Site info scan complete');
+        } catch (err) {
+            logError('scanSiteInfo', err);
+            showToast('Site info scan failed');
+        } finally {
+            isScanningSiteInfo = false;
+            if (activeTab === 'site-info') renderCurrentTab();
+        }
+    }
     /* ===== CLAMP — keeps panel inside viewport ===== */
     function clampPanel(panel) {
         const rect = panel.getBoundingClientRect();
@@ -2031,7 +2535,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.5</span>
+                    <span id="cdp-version">v2.6</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
@@ -2046,6 +2550,7 @@
                 </button>
                 <button id="cdp-mode-btn" type="button" title="Toggle detection mode">Mode</button>
                 <button id="cdp-asset-btn" type="button" class="cdp-inactive" title="Pick page assets">Asset Picker</button>
+                <button id="cdp-inspect-btn" type="button" class="cdp-inactive" title="Inspect element styles">Inspect</button>
                 <button id="cdp-clear-btn" title="Clear History">Clear</button>
             </div>
 
@@ -2092,6 +2597,9 @@
                 <button class="cdp-tab" data-tab="assets">
                     Assets
                 </button>
+                <button class="cdp-tab" data-tab="site-info">
+                    Site Info
+                </button>
             </div>
 
             <div id="cdp-search-box">
@@ -2125,6 +2633,21 @@
             <button id="cdp-asset-copy-svg-btn" type="button">Copy SVG code</button>
             <button id="cdp-asset-download-btn" type="button">Download</button>`;
         document.body.appendChild(assetActions);
+
+        const inspectCard = document.createElement('div');
+        inspectCard.id = 'cdp-inspect-card';
+        inspectCard.className = 'cdp-hidden';
+        inspectCard.innerHTML = `
+            <div id="cdp-inspect-card-head">
+                <div>
+                    <div id="cdp-inspect-card-title">Inspect</div>
+                    <div id="cdp-inspect-card-subtitle">Hover an element</div>
+                </div>
+                <span id="cdp-inspect-card-state">Live</span>
+            </div>
+            <div id="cdp-inspect-card-body"></div>
+            <button id="cdp-inspect-copy-btn" type="button">Copy CSS</button>`;
+        document.body.appendChild(inspectCard);
 
         setupEventListeners();
     }
@@ -2167,6 +2690,7 @@
 
     function setDetecting(active) {
         if (active && isAssetPickerActive) setAssetPickerActive(false);
+        if (active && isInspectActive) setInspectActive(false);
         isDetecting = active;
         updateDetectionControls();
         if (!active) {
@@ -2201,6 +2725,7 @@
         isAssetPickerActive = active;
         updateAssetPickerControls();
         if (active) {
+            if (isInspectActive) setInspectActive(false);
             if (isDetecting) setDetecting(false);
             hideAssetActionPopover();
             showToast('Asset Picker active');
@@ -2211,6 +2736,32 @@
         if (currentAssetHighlight) {
             currentAssetHighlight.classList.remove('cdp-element-highlight');
             currentAssetHighlight = null;
+        }
+    }
+
+    function updateInspectControls() {
+        const inspectBtn = document.getElementById('cdp-inspect-btn');
+        if (!inspectBtn) return;
+        inspectBtn.className = isInspectActive ? 'cdp-active' : 'cdp-inactive';
+        inspectBtn.textContent = isInspectActive ? 'Inspecting' : 'Inspect';
+    }
+
+    function setInspectActive(active) {
+        isInspectActive = active;
+        updateInspectControls();
+        if (active) {
+            if (isAssetPickerActive) setAssetPickerActive(false);
+            if (isDetecting) setDetecting(false);
+            isInspectFrozen = false;
+            hideInspectCard();
+            showToast('Inspect mode active');
+            return;
+        }
+        isInspectFrozen = false;
+        hideInspectCard();
+        if (currentInspectHighlight) {
+            currentInspectHighlight.classList.remove('cdp-element-highlight');
+            currentInspectHighlight = null;
         }
     }
 
@@ -2243,6 +2794,7 @@
             ? DETECTION_MODE_EYEDROPPER
             : DETECTION_MODE_COMPUTED);
         updateAssetPickerControls();
+        updateInspectControls();
     }
 
     function setupEventListeners() {
@@ -2253,6 +2805,7 @@
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
+        const inspectBtn = document.getElementById('cdp-inspect-btn');
         const clearBtn = document.getElementById('cdp-clear-btn');
         const searchIn = document.getElementById('cdp-search-input');
         const tabs = document.querySelectorAll('.cdp-tab');
@@ -2311,6 +2864,14 @@
             downloadCurrentPickedAsset();
         });
 
+        // Inspect
+        inspectBtn.addEventListener('click', () => {
+            setInspectActive(!isInspectActive);
+        });
+        document.getElementById('cdp-inspect-copy-btn').addEventListener('click', () => {
+            copyCurrentInspectCss();
+        });
+
         // Clear
         clearBtn.addEventListener('click', () => {
             detectionHistory = [];
@@ -2356,6 +2917,9 @@
             }
             if (e.key === 'Escape' && isAssetPickerActive) {
                 setAssetPickerActive(false);
+            }
+            if (e.key === 'Escape' && isInspectActive) {
+                setInspectActive(false);
             }
         }));
 
@@ -2517,7 +3081,76 @@
         }
     }
 
+    function clearInspectHighlight() {
+        if (currentInspectHighlight) {
+            currentInspectHighlight.classList.remove('cdp-element-highlight');
+            currentInspectHighlight = null;
+        }
+    }
+
+    function positionInspectCard(card, clientX, clientY) {
+        card.style.left = clientX + 16 + 'px';
+        card.style.top = clientY + 16 + 'px';
+        const rect = card.getBoundingClientRect();
+        if (rect.right > window.innerWidth) card.style.left = (clientX - rect.width - 12) + 'px';
+        if (rect.bottom > window.innerHeight) card.style.top = (clientY - rect.height - 12) + 'px';
+    }
+
+    function renderInspectCard(data, clientX, clientY, frozen) {
+        currentInspectData = data;
+        const card = document.getElementById('cdp-inspect-card');
+        document.getElementById('cdp-inspect-card-title').textContent = data.title;
+        document.getElementById('cdp-inspect-card-subtitle').textContent = data.subtitle;
+        document.getElementById('cdp-inspect-card-state').textContent = frozen ? 'Pinned' : 'Live';
+        const body = document.getElementById('cdp-inspect-card-body');
+        body.innerHTML = data.rows.map(row => `
+            <div class="cdp-inspect-row">
+                <span>${escapeHtml(row.property)}</span>
+                <strong>${escapeHtml(row.value)}</strong>
+            </div>`).join('');
+        card.classList.remove('cdp-hidden');
+        positionInspectCard(card, clientX, clientY);
+    }
+
+    function hideInspectCard() {
+        currentInspectData = null;
+        const card = document.getElementById('cdp-inspect-card');
+        if (card) card.classList.add('cdp-hidden');
+    }
+
+    function handleInspectMove(e) {
+        if (isInspectFrozen) return;
+        const target = e.target;
+        if (isIgnoredDetectionTarget(target)) return;
+        const data = inspectDataFromElement(target);
+        if (currentInspectHighlight && currentInspectHighlight !== target) {
+            currentInspectHighlight.classList.remove('cdp-element-highlight');
+        }
+        target.classList.add('cdp-element-highlight');
+        currentInspectHighlight = target;
+        renderInspectCard(data, e.clientX, e.clientY, false);
+    }
+
+    function freezeInspectCard(target, clientX, clientY) {
+        const data = inspectDataFromElement(target);
+        isInspectFrozen = true;
+        renderInspectCard(data, clientX, clientY, true);
+        showToast('Inspect card pinned');
+    }
+
+    function copyCurrentInspectCss() {
+        if (!currentInspectData) {
+            showToast('Nothing to copy');
+            return;
+        }
+        copyToClipboard(currentInspectData.cssText);
+    }
+
     function handleMouseMove(e) {
+        if (isInspectActive) {
+            handleInspectMove(e);
+            return;
+        }
         if (isAssetPickerActive) {
             handleAssetPickerMove(e);
             return;
@@ -2552,6 +3185,13 @@
     }
 
     function handleDetectionClick(e) {
+        if (isInspectActive) {
+            const target = e.target;
+            if (isIgnoredDetectionTarget(target)) return;
+            e.preventDefault(); e.stopPropagation();
+            freezeInspectCard(target, e.clientX, e.clientY);
+            return;
+        }
         if (isAssetPickerActive) {
             const target = e.target;
             if (isIgnoredDetectionTarget(target)) return;
@@ -2638,6 +3278,7 @@
         else if (tab === 'palette') renderPalette();
         else if (tab === 'harmony') renderHarmony();
         else if (tab === 'assets') renderAssets();
+        else if (tab === 'site-info') renderSiteInfo();
     }
 
     function updatePreview(hex, name) {
@@ -3024,6 +3665,124 @@
             btn.addEventListener('click', () => {
                 const asset = pageAssets.find(item => item.id === btn.dataset.assetId);
                 if (asset) downloadAsset(asset).catch(err => logError('download asset card', err));
+            });
+        });
+    }
+
+    function renderSiteFonts() {
+        if (siteInfo.fonts.length === 0) {
+            return '<div class="cdp-empty-state-text">No font usage captured yet.</div>';
+        }
+        return `
+            <div class="cdp-site-list">
+                ${siteInfo.fonts.map(font => `
+                    <div class="cdp-site-row">
+                        <div class="cdp-site-row-title">
+                            <span>${escapeHtml(font.name)}</span>
+                            <span>${font.count} uses</span>
+                        </div>
+                        <div class="cdp-site-row-meta">${escapeHtml(font.status || 'computed style')}</div>
+                        <div class="cdp-site-row-meta">${escapeHtml(font.sample || 'No text sample')}</div>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function renderSiteColors() {
+        if (siteInfo.colors.length === 0) {
+            return '<div class="cdp-empty-state-text">No colors captured yet.</div>';
+        }
+        return `
+            <div class="cdp-site-color-grid">
+                ${siteInfo.colors.slice(0, 72).map(color => `
+                    <div class="cdp-site-color-chip" data-copy-color="${escapeHtml(color.hex)}" style="background:${escapeHtml(color.hex)};color:${getContrastColor(color.hex)};">
+                        <span>${escapeHtml(color.hex)}<br>${color.count} uses</span>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function renderSiteTokens() {
+        if (siteInfo.tokens.length === 0) {
+            return '<div class="cdp-empty-state-text">No :root custom properties found.</div>';
+        }
+        return `
+            <div class="cdp-site-list">
+                ${siteInfo.tokens.slice(0, 160).map(token => `
+                    <div class="cdp-site-row cdp-token-row" data-token-name="${escapeHtml(token.name)}" data-token-value="${escapeHtml(token.value)}">
+                        <code>${escapeHtml(token.name)}</code>
+                        <code>${escapeHtml(token.value)}</code>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function renderSiteTechnologies() {
+        if (siteInfo.technologies.length === 0) {
+            return '<div class="cdp-empty-state-text">No framework or CMS signal detected.</div>';
+        }
+        return `
+            <div class="cdp-site-list">
+                ${siteInfo.technologies.map(item => `
+                    <div class="cdp-site-row">
+                        <div class="cdp-site-row-title">
+                            <span>${escapeHtml(item.name)}</span>
+                            <span>${escapeHtml(item.confidence)}</span>
+                        </div>
+                        <div class="cdp-site-row-meta">${escapeHtml(item.evidence)}</div>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function renderSiteInfoSection(title, bodyHtml) {
+        return `
+            <div class="cdp-site-section">
+                <div class="cdp-category-header">${escapeHtml(title)}</div>
+                <div class="cdp-site-section-body">${bodyHtml}</div>
+            </div>`;
+    }
+
+    function renderSiteInfo() {
+        const container = document.getElementById('cdp-color-list-container');
+        const disabled = isScanningSiteInfo ? ' disabled' : '';
+        const scanLabel = isScanningSiteInfo ? 'Scanning...' : 'Scan Page';
+        const scanned = siteInfo.scannedAt
+            ? `${siteInfo.scannedCount} elements scanned at ${siteInfo.scannedAt}`
+            : `${siteInfo.scannedCount} elements scanned`;
+        let html = `
+            <div class="cdp-site-toolbar">
+                <button class="cdp-site-action" id="cdp-scan-site-info-btn" type="button"${disabled}>${scanLabel}</button>
+                <span class="cdp-site-status">${escapeHtml(scanned)}${siteInfo.limitReached ? ' (limited)' : ''}</span>
+            </div>`;
+        if (!siteInfo.scannedAt && !isScanningSiteInfo) {
+            html += `
+                <div class="cdp-empty-state">
+                    <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg></div>
+                    <div class="cdp-empty-state-text">Scan the page to collect fonts, colors, tokens, and technology signals.</div>
+                </div>`;
+        } else {
+            if (isScanningSiteInfo) html += '<div class="cdp-loading-spinner"></div>';
+            html += renderSiteInfoSection('Fonts in use', renderSiteFonts());
+            html += renderSiteInfoSection('Site palette', renderSiteColors());
+            html += renderSiteInfoSection('Root custom properties', renderSiteTokens());
+            html += renderSiteInfoSection('Technology signals', renderSiteTechnologies());
+        }
+        container.innerHTML = html;
+        attachSiteInfoHandlers(container);
+    }
+
+    function attachSiteInfoHandlers(container) {
+        const scanBtn = document.getElementById('cdp-scan-site-info-btn');
+        if (scanBtn) {
+            scanBtn.addEventListener('click', () => {
+                scanSiteInfo();
+            });
+        }
+        container.querySelectorAll('.cdp-site-color-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                copyToClipboard(chip.dataset.copyColor);
+            });
+        });
+        container.querySelectorAll('.cdp-token-row').forEach(row => {
+            row.addEventListener('click', () => {
+                copyToClipboard(`${row.dataset.tokenName}: ${row.dataset.tokenValue};`);
             });
         });
     }

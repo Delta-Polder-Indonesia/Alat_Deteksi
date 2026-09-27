@@ -7,6 +7,7 @@
         else if (tab === 'palette') renderPalette();
         else if (tab === 'harmony') renderHarmony();
         else if (tab === 'assets') renderAssets();
+        else if (tab === 'site-info') renderSiteInfo();
     }
 
     function updatePreview(hex, name) {
@@ -393,6 +394,124 @@
             btn.addEventListener('click', () => {
                 const asset = pageAssets.find(item => item.id === btn.dataset.assetId);
                 if (asset) downloadAsset(asset).catch(err => logError('download asset card', err));
+            });
+        });
+    }
+
+    function renderSiteFonts() {
+        if (siteInfo.fonts.length === 0) {
+            return '<div class="cdp-empty-state-text">No font usage captured yet.</div>';
+        }
+        return `
+            <div class="cdp-site-list">
+                ${siteInfo.fonts.map(font => `
+                    <div class="cdp-site-row">
+                        <div class="cdp-site-row-title">
+                            <span>${escapeHtml(font.name)}</span>
+                            <span>${font.count} uses</span>
+                        </div>
+                        <div class="cdp-site-row-meta">${escapeHtml(font.status || 'computed style')}</div>
+                        <div class="cdp-site-row-meta">${escapeHtml(font.sample || 'No text sample')}</div>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function renderSiteColors() {
+        if (siteInfo.colors.length === 0) {
+            return '<div class="cdp-empty-state-text">No colors captured yet.</div>';
+        }
+        return `
+            <div class="cdp-site-color-grid">
+                ${siteInfo.colors.slice(0, 72).map(color => `
+                    <div class="cdp-site-color-chip" data-copy-color="${escapeHtml(color.hex)}" style="background:${escapeHtml(color.hex)};color:${getContrastColor(color.hex)};">
+                        <span>${escapeHtml(color.hex)}<br>${color.count} uses</span>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function renderSiteTokens() {
+        if (siteInfo.tokens.length === 0) {
+            return '<div class="cdp-empty-state-text">No :root custom properties found.</div>';
+        }
+        return `
+            <div class="cdp-site-list">
+                ${siteInfo.tokens.slice(0, 160).map(token => `
+                    <div class="cdp-site-row cdp-token-row" data-token-name="${escapeHtml(token.name)}" data-token-value="${escapeHtml(token.value)}">
+                        <code>${escapeHtml(token.name)}</code>
+                        <code>${escapeHtml(token.value)}</code>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function renderSiteTechnologies() {
+        if (siteInfo.technologies.length === 0) {
+            return '<div class="cdp-empty-state-text">No framework or CMS signal detected.</div>';
+        }
+        return `
+            <div class="cdp-site-list">
+                ${siteInfo.technologies.map(item => `
+                    <div class="cdp-site-row">
+                        <div class="cdp-site-row-title">
+                            <span>${escapeHtml(item.name)}</span>
+                            <span>${escapeHtml(item.confidence)}</span>
+                        </div>
+                        <div class="cdp-site-row-meta">${escapeHtml(item.evidence)}</div>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    function renderSiteInfoSection(title, bodyHtml) {
+        return `
+            <div class="cdp-site-section">
+                <div class="cdp-category-header">${escapeHtml(title)}</div>
+                <div class="cdp-site-section-body">${bodyHtml}</div>
+            </div>`;
+    }
+
+    function renderSiteInfo() {
+        const container = document.getElementById('cdp-color-list-container');
+        const disabled = isScanningSiteInfo ? ' disabled' : '';
+        const scanLabel = isScanningSiteInfo ? 'Scanning...' : 'Scan Page';
+        const scanned = siteInfo.scannedAt
+            ? `${siteInfo.scannedCount} elements scanned at ${siteInfo.scannedAt}`
+            : `${siteInfo.scannedCount} elements scanned`;
+        let html = `
+            <div class="cdp-site-toolbar">
+                <button class="cdp-site-action" id="cdp-scan-site-info-btn" type="button"${disabled}>${scanLabel}</button>
+                <span class="cdp-site-status">${escapeHtml(scanned)}${siteInfo.limitReached ? ' (limited)' : ''}</span>
+            </div>`;
+        if (!siteInfo.scannedAt && !isScanningSiteInfo) {
+            html += `
+                <div class="cdp-empty-state">
+                    <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg></div>
+                    <div class="cdp-empty-state-text">Scan the page to collect fonts, colors, tokens, and technology signals.</div>
+                </div>`;
+        } else {
+            if (isScanningSiteInfo) html += '<div class="cdp-loading-spinner"></div>';
+            html += renderSiteInfoSection('Fonts in use', renderSiteFonts());
+            html += renderSiteInfoSection('Site palette', renderSiteColors());
+            html += renderSiteInfoSection('Root custom properties', renderSiteTokens());
+            html += renderSiteInfoSection('Technology signals', renderSiteTechnologies());
+        }
+        container.innerHTML = html;
+        attachSiteInfoHandlers(container);
+    }
+
+    function attachSiteInfoHandlers(container) {
+        const scanBtn = document.getElementById('cdp-scan-site-info-btn');
+        if (scanBtn) {
+            scanBtn.addEventListener('click', () => {
+                scanSiteInfo();
+            });
+        }
+        container.querySelectorAll('.cdp-site-color-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                copyToClipboard(chip.dataset.copyColor);
+            });
+        });
+        container.querySelectorAll('.cdp-token-row').forEach(row => {
+            row.addEventListener('click', () => {
+                copyToClipboard(`${row.dataset.tokenName}: ${row.dataset.tokenValue};`);
             });
         });
     }

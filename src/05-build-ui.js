@@ -44,7 +44,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.5</span>
+                    <span id="cdp-version">v2.6</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
@@ -59,6 +59,7 @@
                 </button>
                 <button id="cdp-mode-btn" type="button" title="Toggle detection mode">Mode</button>
                 <button id="cdp-asset-btn" type="button" class="cdp-inactive" title="Pick page assets">Asset Picker</button>
+                <button id="cdp-inspect-btn" type="button" class="cdp-inactive" title="Inspect element styles">Inspect</button>
                 <button id="cdp-clear-btn" title="Clear History">Clear</button>
             </div>
 
@@ -105,6 +106,9 @@
                 <button class="cdp-tab" data-tab="assets">
                     Assets
                 </button>
+                <button class="cdp-tab" data-tab="site-info">
+                    Site Info
+                </button>
             </div>
 
             <div id="cdp-search-box">
@@ -138,6 +142,21 @@
             <button id="cdp-asset-copy-svg-btn" type="button">Copy SVG code</button>
             <button id="cdp-asset-download-btn" type="button">Download</button>`;
         document.body.appendChild(assetActions);
+
+        const inspectCard = document.createElement('div');
+        inspectCard.id = 'cdp-inspect-card';
+        inspectCard.className = 'cdp-hidden';
+        inspectCard.innerHTML = `
+            <div id="cdp-inspect-card-head">
+                <div>
+                    <div id="cdp-inspect-card-title">Inspect</div>
+                    <div id="cdp-inspect-card-subtitle">Hover an element</div>
+                </div>
+                <span id="cdp-inspect-card-state">Live</span>
+            </div>
+            <div id="cdp-inspect-card-body"></div>
+            <button id="cdp-inspect-copy-btn" type="button">Copy CSS</button>`;
+        document.body.appendChild(inspectCard);
 
         setupEventListeners();
     }

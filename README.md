@@ -26,6 +26,10 @@ ada di [SKILL.md](SKILL.md).
   sprite, data URI, dan poster video dari halaman sebagai referensi desain.
 - Tab Assets memindai halaman, menampilkan galeri aset, dan mengunduh aset
   terpilih atau semua aset secara berurutan.
+- Mode Inspect menampilkan properti CSS utama elemen dan menyalin deklarasi
+  siap tempel.
+- Tab Site Info memindai font terpakai, palet warna, design token `:root`,
+  dan sinyal teknologi halaman secara bertahap agar UI tetap responsif.
 
 ## Alur Kerja
 

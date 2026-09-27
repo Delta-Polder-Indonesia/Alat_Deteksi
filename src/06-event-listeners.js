@@ -36,6 +36,7 @@
 
     function setDetecting(active) {
         if (active && isAssetPickerActive) setAssetPickerActive(false);
+        if (active && isInspectActive) setInspectActive(false);
         isDetecting = active;
         updateDetectionControls();
         if (!active) {
@@ -70,6 +71,7 @@
         isAssetPickerActive = active;
         updateAssetPickerControls();
         if (active) {
+            if (isInspectActive) setInspectActive(false);
             if (isDetecting) setDetecting(false);
             hideAssetActionPopover();
             showToast('Asset Picker active');
@@ -80,6 +82,32 @@
         if (currentAssetHighlight) {
             currentAssetHighlight.classList.remove('cdp-element-highlight');
             currentAssetHighlight = null;
+        }
+    }
+
+    function updateInspectControls() {
+        const inspectBtn = document.getElementById('cdp-inspect-btn');
+        if (!inspectBtn) return;
+        inspectBtn.className = isInspectActive ? 'cdp-active' : 'cdp-inactive';
+        inspectBtn.textContent = isInspectActive ? 'Inspecting' : 'Inspect';
+    }
+
+    function setInspectActive(active) {
+        isInspectActive = active;
+        updateInspectControls();
+        if (active) {
+            if (isAssetPickerActive) setAssetPickerActive(false);
+            if (isDetecting) setDetecting(false);
+            isInspectFrozen = false;
+            hideInspectCard();
+            showToast('Inspect mode active');
+            return;
+        }
+        isInspectFrozen = false;
+        hideInspectCard();
+        if (currentInspectHighlight) {
+            currentInspectHighlight.classList.remove('cdp-element-highlight');
+            currentInspectHighlight = null;
         }
     }
 
@@ -112,6 +140,7 @@
             ? DETECTION_MODE_EYEDROPPER
             : DETECTION_MODE_COMPUTED);
         updateAssetPickerControls();
+        updateInspectControls();
     }
 
     function setupEventListeners() {
@@ -122,6 +151,7 @@
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
+        const inspectBtn = document.getElementById('cdp-inspect-btn');
         const clearBtn = document.getElementById('cdp-clear-btn');
         const searchIn = document.getElementById('cdp-search-input');
         const tabs = document.querySelectorAll('.cdp-tab');
@@ -180,6 +210,14 @@
             downloadCurrentPickedAsset();
         });
 
+        // Inspect
+        inspectBtn.addEventListener('click', () => {
+            setInspectActive(!isInspectActive);
+        });
+        document.getElementById('cdp-inspect-copy-btn').addEventListener('click', () => {
+            copyCurrentInspectCss();
+        });
+
         // Clear
         clearBtn.addEventListener('click', () => {
             detectionHistory = [];
@@ -225,6 +263,9 @@
             }
             if (e.key === 'Escape' && isAssetPickerActive) {
                 setAssetPickerActive(false);
+            }
+            if (e.key === 'Escape' && isInspectActive) {
+                setInspectActive(false);
             }
         }));
 

@@ -144,7 +144,76 @@
         }
     }
 
+    function clearInspectHighlight() {
+        if (currentInspectHighlight) {
+            currentInspectHighlight.classList.remove('cdp-element-highlight');
+            currentInspectHighlight = null;
+        }
+    }
+
+    function positionInspectCard(card, clientX, clientY) {
+        card.style.left = clientX + 16 + 'px';
+        card.style.top = clientY + 16 + 'px';
+        const rect = card.getBoundingClientRect();
+        if (rect.right > window.innerWidth) card.style.left = (clientX - rect.width - 12) + 'px';
+        if (rect.bottom > window.innerHeight) card.style.top = (clientY - rect.height - 12) + 'px';
+    }
+
+    function renderInspectCard(data, clientX, clientY, frozen) {
+        currentInspectData = data;
+        const card = document.getElementById('cdp-inspect-card');
+        document.getElementById('cdp-inspect-card-title').textContent = data.title;
+        document.getElementById('cdp-inspect-card-subtitle').textContent = data.subtitle;
+        document.getElementById('cdp-inspect-card-state').textContent = frozen ? 'Pinned' : 'Live';
+        const body = document.getElementById('cdp-inspect-card-body');
+        body.innerHTML = data.rows.map(row => `
+            <div class="cdp-inspect-row">
+                <span>${escapeHtml(row.property)}</span>
+                <strong>${escapeHtml(row.value)}</strong>
+            </div>`).join('');
+        card.classList.remove('cdp-hidden');
+        positionInspectCard(card, clientX, clientY);
+    }
+
+    function hideInspectCard() {
+        currentInspectData = null;
+        const card = document.getElementById('cdp-inspect-card');
+        if (card) card.classList.add('cdp-hidden');
+    }
+
+    function handleInspectMove(e) {
+        if (isInspectFrozen) return;
+        const target = e.target;
+        if (isIgnoredDetectionTarget(target)) return;
+        const data = inspectDataFromElement(target);
+        if (currentInspectHighlight && currentInspectHighlight !== target) {
+            currentInspectHighlight.classList.remove('cdp-element-highlight');
+        }
+        target.classList.add('cdp-element-highlight');
+        currentInspectHighlight = target;
+        renderInspectCard(data, e.clientX, e.clientY, false);
+    }
+
+    function freezeInspectCard(target, clientX, clientY) {
+        const data = inspectDataFromElement(target);
+        isInspectFrozen = true;
+        renderInspectCard(data, clientX, clientY, true);
+        showToast('Inspect card pinned');
+    }
+
+    function copyCurrentInspectCss() {
+        if (!currentInspectData) {
+            showToast('Nothing to copy');
+            return;
+        }
+        copyToClipboard(currentInspectData.cssText);
+    }
+
     function handleMouseMove(e) {
+        if (isInspectActive) {
+            handleInspectMove(e);
+            return;
+        }
         if (isAssetPickerActive) {
             handleAssetPickerMove(e);
             return;
@@ -179,6 +248,13 @@
     }
 
     function handleDetectionClick(e) {
+        if (isInspectActive) {
+            const target = e.target;
+            if (isIgnoredDetectionTarget(target)) return;
+            e.preventDefault(); e.stopPropagation();
+            freezeInspectCard(target, e.clientX, e.clientY);
+            return;
+        }
         if (isAssetPickerActive) {
             const target = e.target;
             if (isIgnoredDetectionTarget(target)) return;

@@ -7,6 +7,20 @@
     const COLOR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     const ASSET_FETCH_TIMEOUT_MS = 15000;
     const ASSET_DOWNLOAD_TIMEOUT_MS = 45000;
+    const SITE_SCAN_ELEMENT_LIMIT = 2500;
+    const SITE_SCAN_BATCH_SIZE = 120;
+    const INSPECT_CSS_PROPERTIES = Object.freeze([
+        'font-family',
+        'font-size',
+        'font-weight',
+        'line-height',
+        'color',
+        'background',
+        'border-radius',
+        'box-shadow',
+        'padding',
+        'margin',
+    ]);
     const STORAGE_KEYS = Object.freeze({
         history: 'cdp_detection_history',
         panelPosition: 'cdp_panel_position',
@@ -61,3 +75,17 @@
     let pageAssets = [];
     let isScanningAssets = false;
     let isDownloadingAssets = false;
+    let isInspectActive = false;
+    let isInspectFrozen = false;
+    let currentInspectHighlight = null;
+    let currentInspectData = null;
+    let siteInfo = {
+        fonts: [],
+        colors: [],
+        tokens: [],
+        technologies: [],
+        scannedCount: 0,
+        limitReached: false,
+        scannedAt: null,
+    };
+    let isScanningSiteInfo = false;

@@ -72,7 +72,8 @@
 
     function isValidTabName(tabName) {
         return tabName === 'database' || tabName === 'history' ||
-            tabName === 'palette' || tabName === 'harmony' || tabName === 'assets';
+            tabName === 'palette' || tabName === 'harmony' ||
+            tabName === 'assets' || tabName === 'site-info';
     }
 
     function loadStoredActiveTab() {
@@ -1038,5 +1039,285 @@
         } finally {
             isScanningAssets = false;
             if (activeTab === 'assets') renderCurrentTab();
+        }
+    }
+
+    function elementDescriptor(el) {
+        if (!el || !el.tagName) return 'element';
+        const tag = el.tagName.toLowerCase();
+        const id = el.id ? '#' + cleanFilenamePart(el.id) : '';
+        const classText = typeof el.className === 'string'
+            ? el.className
+            : (el.getAttribute && el.getAttribute('class')) || '';
+        const classes = classText.trim().split(/\s+/).filter(Boolean).slice(0, 3)
+            .map(name => '.' + cleanFilenamePart(name)).join('');
+        return tag + id + classes;
+    }
+
+    function inspectCssValue(style, property) {
+        if (property === 'background') {
+            const bgImage = style.backgroundImage;
+            if (bgImage && bgImage !== 'none') return style.background;
+            return style.backgroundColor;
+        }
+        return style.getPropertyValue(property) || '';
+    }
+
+    function inspectDataFromElement(el) {
+        const style = window.getComputedStyle(el);
+        const rows = INSPECT_CSS_PROPERTIES.map(property => ({
+            property,
+            value: inspectCssValue(style, property).trim() || 'initial',
+        }));
+        return {
+            element: el,
+            title: elementDescriptor(el),
+            subtitle: rectDimensions(el),
+            rows,
+            cssText: rows.map(row => `${row.property}: ${row.value};`).join('\n'),
+        };
+    }
+
+    function normalizeFontName(name) {
+        return String(name || '')
+            .trim()
+            .replace(/^['"]|['"]$/g, '')
+            .trim();
+    }
+
+    function splitFontFamily(value) {
+        if (!value) return [];
+        return String(value).split(',')
+            .map(normalizeFontName)
+            .filter(Boolean);
+    }
+
+    function elementTextSample(el) {
+        if (!el || !el.textContent) return '';
+        return el.textContent.replace(/\s+/g, ' ').trim().slice(0, 90);
+    }
+
+    function normalizeCssColor(value) {
+        if (!value || value === 'transparent') return '';
+        const match = /rgba?\(([^)]+)\)/i.exec(value);
+        if (!match) return '';
+        const parts = match[1].split(',').map(part => part.trim());
+        if (parts.length < 3) return '';
+        const alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+        if (Number.isFinite(alpha) && alpha <= 0) return '';
+        const channels = parts.slice(0, 3).map(part => {
+            if (part.endsWith('%')) {
+                return Math.round(clampNumber(parseFloat(part), 0, 100) * 2.55);
+            }
+            return Math.round(clampNumber(parseFloat(part), 0, 255));
+        });
+        if (channels.some(channel => !Number.isFinite(channel))) return '';
+        return '#' + channels.map(channel => channel.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    function scanClassEvidence(el, evidence) {
+        const classText = typeof el.className === 'string'
+            ? el.className
+            : (el.getAttribute && el.getAttribute('class')) || '';
+        if (!classText) return;
+        const classes = classText.split(/\s+/).filter(Boolean);
+        classes.forEach(name => {
+            if (/^(flex|grid|block|inline-block|hidden|container|text-|bg-|p[trblxy]?-[\w/.-]+|m[trblxy]?-[\w/.-]+|w-[\w/.-]+|h-[\w/.-]+|rounded|shadow|font-|items-|justify-|gap-|space-|border-|leading-|tracking-)/.test(name)) {
+                evidence.tailwind += 1;
+            }
+            if (/^(container|row|col(?:-|$)|btn(?:-|$)|navbar|card|alert|modal|badge|d-flex|text-|bg-|mt-|mb-|ms-|me-|pt-|pb-|ps-|pe-)/.test(name)) {
+                evidence.bootstrap += 1;
+            }
+        });
+    }
+
+    function scanDomFrameworkEvidence(el, evidence) {
+        try {
+            if (Object.keys(el).some(key => key.startsWith('__reactFiber') || key.startsWith('__reactProps'))) {
+                evidence.reactDom += 1;
+            }
+        } catch (err) {
+            logError('scanDomFrameworkEvidence React', err);
+        }
+        if (el.hasAttribute && (el.hasAttribute('data-v-app') || el.hasAttribute('data-reactroot'))) {
+            if (el.hasAttribute('data-v-app')) evidence.vueDom += 1;
+            if (el.hasAttribute('data-reactroot')) evidence.reactDom += 1;
+        }
+        if (el.attributes) {
+            for (const attr of el.attributes) {
+                if (/^data-v-[a-z0-9]+$/i.test(attr.name)) {
+                    evidence.vueDom += 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    function addTechnology(items, name, evidence, confidence) {
+        if (!evidence) return;
+        items.push({ name, evidence, confidence });
+    }
+
+    function confidenceFromCount(count, high, medium) {
+        if (count >= high) return 'High';
+        if (count >= medium) return 'Medium';
+        return 'Low';
+    }
+
+    function detectTechnologies(evidence) {
+        const items = [];
+        addTechnology(items, 'Tailwind CSS', `${evidence.tailwind} utility-like classes`,
+            evidence.tailwind >= 8 ? confidenceFromCount(evidence.tailwind, 80, 25) : '');
+        addTechnology(items, 'Bootstrap', `${evidence.bootstrap} Bootstrap-like classes`,
+            evidence.bootstrap >= 4 ? confidenceFromCount(evidence.bootstrap, 45, 15) : '');
+        addTechnology(items, 'React', evidence.reactGlobal ? 'React global detected' : `${evidence.reactDom} React DOM markers`,
+            evidence.reactGlobal || evidence.reactDom > 0 ? (evidence.reactGlobal ? 'High' : 'Medium') : '');
+        addTechnology(items, 'Vue', evidence.vueGlobal ? 'Vue global detected' : `${evidence.vueDom} Vue DOM markers`,
+            evidence.vueGlobal || evidence.vueDom > 0 ? (evidence.vueGlobal ? 'High' : 'Medium') : '');
+        addTechnology(items, 'jQuery', evidence.jqueryGlobal, evidence.jqueryGlobal ? 'High' : '');
+        addTechnology(items, 'Next.js', evidence.nextEvidence, evidence.nextEvidence ? 'High' : '');
+        if (evidence.generator) {
+            addTechnology(items, 'CMS or generator', evidence.generator, 'Medium');
+        }
+        return items.filter(item => item.confidence);
+    }
+
+    function readRootCustomProperties() {
+        const tokens = [];
+        try {
+            const rootStyle = window.getComputedStyle(document.documentElement);
+            for (let i = 0; i < rootStyle.length; i += 1) {
+                const name = rootStyle[i];
+                if (!name || !name.startsWith('--')) continue;
+                const value = rootStyle.getPropertyValue(name).trim();
+                if (!value) continue;
+                tokens.push({ name, value });
+            }
+        } catch (err) {
+            logError('readRootCustomProperties', err);
+        }
+        return tokens.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function getFontFaceStatusMap() {
+        const map = new Map();
+        try {
+            if (document.fonts && typeof document.fonts.forEach === 'function') {
+                document.fonts.forEach(face => {
+                    const family = normalizeFontName(face.family);
+                    if (!family) return;
+                    map.set(family.toLowerCase(), face.status || 'known');
+                });
+            }
+        } catch (err) {
+            logError('getFontFaceStatusMap', err);
+        }
+        return map;
+    }
+
+    function waitForNextScanBatch() {
+        return new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    async function scanSiteInfo() {
+        if (isScanningSiteInfo) return;
+        isScanningSiteInfo = true;
+        siteInfo = {
+            fonts: [],
+            colors: [],
+            tokens: [],
+            technologies: [],
+            scannedCount: 0,
+            limitReached: false,
+            scannedAt: null,
+        };
+        renderCurrentTab();
+        try {
+            const fontMap = new Map();
+            const colorMap = new Map();
+            const evidence = {
+                tailwind: 0,
+                bootstrap: 0,
+                reactDom: 0,
+                vueDom: 0,
+                reactGlobal: !!window.React,
+                vueGlobal: !!window.Vue,
+                jqueryGlobal: window.jQuery && window.jQuery.fn
+                    ? 'jQuery ' + window.jQuery.fn.jquery
+                    : '',
+                nextEvidence: window.__NEXT_DATA__ || document.getElementById('__next') || document.querySelector('script[src*="/_next/"]')
+                    ? 'Next.js marker detected'
+                    : '',
+                generator: '',
+            };
+            const generatorMeta = document.querySelector('meta[name="generator"], meta[property="generator"]');
+            if (generatorMeta) evidence.generator = generatorMeta.getAttribute('content') || 'Generator meta tag detected';
+
+            const elements = document.body ? document.body.getElementsByTagName('*') : [];
+            const limit = Math.min(elements.length, SITE_SCAN_ELEMENT_LIMIT);
+            siteInfo.limitReached = elements.length > limit;
+            const fontFaceStatus = getFontFaceStatusMap();
+
+            for (let index = 0; index < limit; index += SITE_SCAN_BATCH_SIZE) {
+                const end = Math.min(index + SITE_SCAN_BATCH_SIZE, limit);
+                for (let i = index; i < end; i += 1) {
+                    const el = elements[i];
+                    if (!el || isCdpElement(el)) continue;
+                    let style = null;
+                    try {
+                        style = window.getComputedStyle(el);
+                    } catch (err) {
+                        logError('scanSiteInfo computed style', err);
+                        continue;
+                    }
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
+
+                    scanClassEvidence(el, evidence);
+                    scanDomFrameworkEvidence(el, evidence);
+
+                    const sample = elementTextSample(el);
+                    splitFontFamily(style.fontFamily).forEach(font => {
+                        const key = font.toLowerCase();
+                        const current = fontMap.get(key) || {
+                            name: font,
+                            count: 0,
+                            sample: '',
+                            status: fontFaceStatus.get(key) || '',
+                        };
+                        current.count += 1;
+                        if (!current.sample && sample) current.sample = sample;
+                        if (!current.status && fontFaceStatus.has(key)) current.status = fontFaceStatus.get(key);
+                        fontMap.set(key, current);
+                    });
+
+                    ['color', 'backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(prop => {
+                        const hex = normalizeCssColor(style[prop]);
+                        if (!hex) return;
+                        const current = colorMap.get(hex) || { hex, count: 0 };
+                        current.count += 1;
+                        colorMap.set(hex, current);
+                    });
+                }
+                siteInfo.scannedCount = end;
+                if (activeTab === 'site-info') renderCurrentTab();
+                await waitForNextScanBatch();
+            }
+
+            siteInfo = {
+                fonts: Array.from(fontMap.values()).sort((a, b) => b.count - a.count),
+                colors: Array.from(colorMap.values()).sort((a, b) => b.count - a.count),
+                tokens: readRootCustomProperties(),
+                technologies: detectTechnologies(evidence),
+                scannedCount: limit,
+                limitReached: elements.length > limit,
+                scannedAt: new Date().toLocaleTimeString(),
+            };
+            showToast('Site info scan complete');
+        } catch (err) {
+            logError('scanSiteInfo', err);
+            showToast('Site info scan failed');
+        } finally {
+            isScanningSiteInfo = false;
+            if (activeTab === 'site-info') renderCurrentTab();
         }
     }
