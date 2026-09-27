@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/Delta-Polder-Indonesia/Alat_Deteksi
-// @version      2.9.0
+// @version      3.0.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT

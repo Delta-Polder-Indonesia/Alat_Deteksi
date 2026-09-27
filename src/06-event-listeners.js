@@ -19,8 +19,8 @@
     function updateDetectionControls() {
         const detectBtn = document.getElementById('cdp-detect-btn');
         const detectLabel = document.getElementById('cdp-detect-label');
-        const toggleBtn = document.getElementById('cdp-toggle-btn');
-        if (!detectBtn || !detectLabel || !toggleBtn) return;
+        const colorNav = document.getElementById('cdp-color-nav');
+        if (!detectBtn || !detectLabel || !colorNav) return;
         detectBtn.className = isDetecting ? 'cdp-active' : 'cdp-inactive';
         if (isDetecting) {
             detectLabel.textContent = detectionMode === DETECTION_MODE_EYEDROPPER
@@ -31,7 +31,7 @@
                 ? 'Pick Pixel Color'
                 : 'Start Style Detection';
         }
-        toggleBtn.classList.toggle('cdp-detecting', isDetecting);
+        colorNav.classList.toggle('cdp-detecting', isDetecting);
     }
 
     function setDetecting(active) {
@@ -123,14 +123,11 @@
     }
 
     function setPanelSide(panel, side, shouldNotify = true) {
-        const toggleBtn = document.getElementById('cdp-toggle-btn');
         const nextSide = side === 'left' ? 'left' : 'right';
         const sideChanged = sidebarSide !== nextSide;
         sidebarSide = nextSide;
         panel.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
         panel.setAttribute('data-side', sidebarSide);
-        toggleBtn.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
-        toggleBtn.setAttribute('data-side', sidebarSide);
         safeSetValue(STORAGE_KEYS.sidebarSide, sidebarSide);
         if (shouldNotify && sideChanged) {
             showNotification('Sidebar: ' + (sidebarSide === 'left' ? 'Left' : 'Right'), 'info');
@@ -144,14 +141,15 @@
 
     function setPanelOpen(panel, open) {
         const toggleBtn = document.getElementById('cdp-toggle-btn');
+        const content = document.getElementById('cdp-sidebar-content');
         isPanelOpen = Boolean(open);
         panel.classList.toggle('cdp-hidden', !isPanelOpen);
-        panel.setAttribute('aria-hidden', String(!isPanelOpen));
-        toggleBtn.classList.toggle('cdp-sidebar-open', isPanelOpen);
+        panel.setAttribute('data-open', String(isPanelOpen));
+        content.setAttribute('aria-hidden', String(!isPanelOpen));
         toggleBtn.setAttribute('aria-expanded', String(isPanelOpen));
-        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro');
-        toggleBtn.title = isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro';
-        if (!isPanelOpen && panel.contains(document.activeElement)) {
+        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Close Color Detector Pro' : 'Open Color Detector Pro');
+        toggleBtn.title = isPanelOpen ? 'Close sidebar (Alt+C)' : 'Open sidebar (Alt+C)';
+        if (!isPanelOpen && content.contains(document.activeElement)) {
             toggleBtn.focus();
         }
     }
@@ -172,7 +170,7 @@
     function setupEventListeners() {
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
-        const closeBtn = document.getElementById('cdp-btn-close');
+        const colorNav = document.getElementById('cdp-color-nav');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
@@ -189,9 +187,10 @@
             setPanelOpen(panel, !isPanelOpen);
         });
 
-        // Close
-        closeBtn.addEventListener('click', () => {
-            setPanelOpen(panel, false);
+        // Color detector navigation
+        colorNav.addEventListener('click', () => {
+            setPanelOpen(panel, true);
+            detectBtn.focus();
         });
 
         // Detect
@@ -260,6 +259,7 @@
         // Tabs
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
+                setPanelOpen(panel, true);
                 selectTab(tab.dataset.tab, true, true);
             });
         });

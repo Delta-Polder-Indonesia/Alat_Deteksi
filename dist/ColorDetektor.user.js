@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/Delta-Polder-Indonesia/Alat_Deteksi
-// @version      2.9.0
+// @version      3.0.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -135,6 +135,7 @@
             --cdp-danger: #da3633;
             --cdp-radius: 6px;
             --cdp-sidebar-width: min(460px, calc(100vw - 64px));
+            --cdp-rail-width: 56px;
             --cdp-transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
         }
 
@@ -143,7 +144,7 @@
             position: fixed;
             top: 0;
             right: 0;
-            width: var(--cdp-sidebar-width);
+            width: calc(var(--cdp-sidebar-width) + var(--cdp-rail-width));
             height: 100vh;
             height: 100dvh;
             box-sizing: border-box;
@@ -156,19 +157,14 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--cdp-text-primary);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             overflow: hidden;
-            transform: translateX(0);
-            visibility: visible;
-            transition: transform 0.22s ease, visibility 0s linear 0s;
+            transition: width 0.22s ease, box-shadow 0.22s ease;
             backdrop-filter: none;
         }
         #cdp-panel.cdp-hidden {
-            display: flex;
-            transform: translateX(100%);
-            visibility: hidden;
-            pointer-events: none;
-            transition: transform 0.22s ease, visibility 0s linear 0.22s;
+            width: var(--cdp-rail-width);
+            box-shadow: -5px 0 18px rgba(1,4,9,0.3);
         }
         #cdp-panel.cdp-sidebar-left {
             right: auto;
@@ -178,7 +174,155 @@
             box-shadow: 12px 0 28px rgba(1,4,9,0.42);
         }
         #cdp-panel.cdp-sidebar-left.cdp-hidden {
-            transform: translateX(-100%);
+            box-shadow: 5px 0 18px rgba(1,4,9,0.3);
+        }
+        #cdp-sidebar-content {
+            width: var(--cdp-sidebar-width);
+            min-width: var(--cdp-sidebar-width);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--cdp-bg-dark);
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.14s ease, visibility 0s linear 0s;
+        }
+        #cdp-panel.cdp-hidden #cdp-sidebar-content {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.1s ease, visibility 0s linear 0.22s;
+        }
+
+        /* ----- NAVIGATION RAIL ----- */
+        #cdp-sidebar-rail {
+            width: var(--cdp-rail-width);
+            min-width: var(--cdp-rail-width);
+            height: 100%;
+            box-sizing: border-box;
+            background: var(--cdp-bg-card);
+            border-right: 1px solid var(--cdp-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 6px;
+            gap: 4px;
+            overflow: hidden;
+            z-index: 2;
+        }
+        .cdp-rail-btn,
+        .cdp-tab {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            min-height: 42px;
+            padding: 0;
+            border: 1px solid transparent;
+            border-radius: var(--cdp-radius);
+            background: transparent;
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--cdp-transition);
+        }
+        .cdp-rail-btn:hover,
+        .cdp-tab:hover {
+            background: #21262d;
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-primary);
+        }
+        .cdp-rail-btn:focus-visible,
+        .cdp-tab:focus-visible {
+            outline: 2px solid var(--cdp-primary);
+            outline-offset: 1px;
+        }
+        .cdp-rail-toggle {
+            color: var(--cdp-text-primary);
+            background: var(--cdp-bg-dark);
+            border-color: var(--cdp-border);
+        }
+        .cdp-rail-toggle svg {
+            transition: transform 0.22s ease;
+        }
+        #cdp-panel.cdp-hidden .cdp-rail-toggle svg {
+            transform: rotate(180deg);
+        }
+        #cdp-panel.cdp-sidebar-left .cdp-rail-toggle svg {
+            transform: rotate(180deg);
+        }
+        #cdp-panel.cdp-sidebar-left.cdp-hidden .cdp-rail-toggle svg {
+            transform: rotate(0deg);
+        }
+        .cdp-rail-divider {
+            width: 30px;
+            height: 1px;
+            margin: 3px 0;
+            background: var(--cdp-border);
+            flex-shrink: 0;
+        }
+        #cdp-color-nav.cdp-detecting {
+            color: #fff;
+            background: var(--cdp-success);
+            border-color: #2ea043;
+        }
+        #cdp-tabs {
+            width: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: none;
+        }
+        #cdp-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .cdp-tab.cdp-tab-active {
+            color: #fff;
+            background: var(--cdp-primary-dark);
+            border-color: var(--cdp-primary);
+            box-shadow: 0 0 0 1px rgba(88,166,255,0.12);
+        }
+        .cdp-tab-label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .cdp-tab-badge {
+            position: absolute;
+            top: 2px;
+            right: 1px;
+            min-width: 14px;
+            max-width: 26px;
+            height: 14px;
+            box-sizing: border-box;
+            padding: 0 3px;
+            border-radius: 7px;
+            background: #30363d;
+            color: var(--cdp-text-primary);
+            border: 1px solid var(--cdp-bg-card);
+            font-size: 8px;
+            line-height: 12px;
+            font-weight: 700;
+            text-align: center;
+            overflow: hidden;
+        }
+        .cdp-tab.cdp-tab-active .cdp-tab-badge {
+            background: var(--cdp-bg-dark);
+            color: #fff;
         }
 
         /* ----- HEADER ----- */
@@ -271,31 +415,6 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        #cdp-header-actions {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .cdp-header-btn {
-            width: 28px;
-            height: 28px;
-            border: 1px solid var(--cdp-border);
-            border-radius: var(--cdp-radius);
-            background: var(--cdp-bg-dark);
-            color: var(--cdp-text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            transition: var(--cdp-transition);
-        }
-        .cdp-header-btn:hover {
-            background: #21262d;
-            color: var(--cdp-text-primary);
-            border-color: #8b949e;
-        }
-
         /* ----- TOOLBAR ----- */
         #cdp-toolbar {
             padding: 10px 14px;
@@ -466,51 +585,6 @@
             font-size: 11px;
             color: var(--cdp-text-muted);
             white-space: nowrap;
-        }
-
-        /* ----- TABS ----- */
-        #cdp-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            background: var(--cdp-bg-card);
-            border-bottom: 1px solid var(--cdp-border);
-            flex-shrink: 0;
-        }
-        .cdp-tab {
-            flex: 1 0 33.333%;
-            padding: 9px 6px;
-            border: none;
-            border-right: 1px solid var(--cdp-border);
-            border-bottom: 1px solid var(--cdp-border);
-            background: var(--cdp-bg-card);
-            color: var(--cdp-text-secondary);
-            font-family: inherit;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--cdp-transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            text-transform: none;
-        }
-        .cdp-tab:hover {
-            background: #21262d;
-            color: var(--cdp-text-primary);
-        }
-        .cdp-tab.cdp-tab-active {
-            color: var(--cdp-text-primary);
-            background: var(--cdp-bg-dark);
-            box-shadow: inset 0 -2px 0 var(--cdp-primary);
-        }
-        .cdp-tab-badge {
-            font-size: 10px;
-            background: #30363d;
-            color: var(--cdp-text-secondary);
-            padding: 1px 6px;
-            border-radius: 999px;
-            font-weight: 600;
         }
 
         /* ----- SEARCH ----- */
@@ -935,42 +1009,6 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             color: var(--cdp-text-secondary);
             line-height: 1.4;
-        }
-
-        /* ----- TOGGLE BUTTON ----- */
-        #cdp-toggle-btn {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 46px;
-            height: 46px;
-            box-sizing: border-box;
-            border-radius: var(--cdp-radius);
-            border: 1px solid var(--cdp-border);
-            background: var(--cdp-bg-card);
-            color: var(--cdp-text-primary);
-            cursor: pointer;
-            z-index: 2147483647;
-            box-shadow: 0 8px 22px rgba(1,4,9,0.34);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: left 0.22s ease, right 0.22s ease, var(--cdp-transition);
-        }
-        #cdp-toggle-btn.cdp-sidebar-open {
-            right: calc(var(--cdp-sidebar-width) + 12px);
-        }
-        #cdp-toggle-btn.cdp-sidebar-left {
-            right: auto;
-            left: 24px;
-        }
-        #cdp-toggle-btn.cdp-sidebar-left.cdp-sidebar-open {
-            left: calc(var(--cdp-sidebar-width) + 12px);
-        }
-        #cdp-toggle-btn:hover,
-        #cdp-toggle-btn.cdp-detecting {
-            background: #21262d;
-            border-color: var(--cdp-primary);
         }
 
         /* ----- TOOLTIP AND POPOVERS ----- */
@@ -2500,18 +2538,21 @@
         return ICON_PIPETTE.replace(/\{S\}/g, size);
     }
 
-    function buildUI() {
-        // Toggle Button
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'cdp-toggle-btn';
-        toggleBtn.type = 'button';
-        toggleBtn.innerHTML = pipetteIcon(24);
-        toggleBtn.title = 'Show Color Detector Pro (Alt+C)';
-        toggleBtn.setAttribute('aria-label', 'Show Color Detector Pro');
-        toggleBtn.setAttribute('aria-controls', 'cdp-panel');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        document.body.appendChild(toggleBtn);
+    const NAVIGATION_ICON_PATHS = Object.freeze({
+        panel: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m8 9 3 3-3 3"/>',
+        database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
+        history: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6h4"/>',
+        palette: '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
+        harmony: '<circle cx="15" cy="9" r="7"/><circle cx="9" cy="15" r="7"/>',
+        assets: '<path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect x="8" y="2" width="14" height="14" rx="2"/>',
+        info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    });
 
+    function navigationIcon(name, size = 20) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAVIGATION_ICON_PATHS[name]}</svg>`;
+    }
+
+    function buildUI() {
         // Cursor Tooltip
         const tooltip = document.createElement('div');
         tooltip.id = 'cdp-cursor-tooltip';
@@ -2527,13 +2568,52 @@
         const panel = document.createElement('div');
         panel.id = 'cdp-panel';
         panel.classList.add('cdp-hidden');
-        panel.setAttribute('aria-hidden', 'true');
+        panel.setAttribute('data-open', 'false');
         panel.innerHTML = `
+            <aside id="cdp-sidebar-rail" aria-label="Color Detector navigation">
+                <button id="cdp-toggle-btn" class="cdp-rail-btn cdp-rail-toggle" type="button" title="Open sidebar (Alt+C)" aria-label="Open Color Detector Pro" aria-controls="cdp-sidebar-content" aria-expanded="false">
+                    ${navigationIcon('panel', 22)}
+                </button>
+                <div class="cdp-rail-divider"></div>
+                <button id="cdp-color-nav" class="cdp-rail-btn" type="button" title="Color detector" aria-label="Color detector">
+                    ${pipetteIcon(20)}
+                </button>
+                <nav id="cdp-tabs" aria-label="Color Detector sections">
+                    <button class="cdp-tab cdp-tab-active" type="button" data-tab="database" title="Color database" aria-label="Color database">
+                        ${navigationIcon('database')}
+                        <span class="cdp-tab-label">Database</span>
+                        <span class="cdp-tab-badge" id="cdp-db-count">0</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="history" title="Detection history" aria-label="Detection history">
+                        ${navigationIcon('history')}
+                        <span class="cdp-tab-label">History</span>
+                        <span class="cdp-tab-badge" id="cdp-history-count">0</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="palette" title="Color palettes" aria-label="Color palettes">
+                        ${navigationIcon('palette')}
+                        <span class="cdp-tab-label">Palette</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="harmony" title="Color harmony" aria-label="Color harmony">
+                        ${navigationIcon('harmony')}
+                        <span class="cdp-tab-label">Harmony</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="assets" title="Page assets" aria-label="Page assets">
+                        ${navigationIcon('assets')}
+                        <span class="cdp-tab-label">Assets</span>
+                    </button>
+                    <button class="cdp-tab" type="button" data-tab="site-info" title="Site information" aria-label="Site information">
+                        ${navigationIcon('info')}
+                        <span class="cdp-tab-label">Site Info</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <main id="cdp-sidebar-content" aria-hidden="true">
             <div id="cdp-header">
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.9.0</span>
+                    <span id="cdp-version">v3.0.0</span>
                     <div id="cdp-header-notification" class="cdp-notification-info" role="status" aria-live="polite" aria-atomic="true">
                         <span id="cdp-header-notification-icon" aria-hidden="true">
                             <svg class="cdp-notification-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
@@ -2542,9 +2622,6 @@
                         </span>
                         <span id="cdp-header-notification-text"></span>
                     </div>
-                </div>
-                <div id="cdp-header-actions">
-                    <button class="cdp-header-btn" id="cdp-btn-close" type="button" title="Hide sidebar" aria-label="Hide sidebar">&times;</button>
                 </div>
             </div>
 
@@ -2584,29 +2661,6 @@
                 </div>
             </div>
 
-            <div id="cdp-tabs">
-                <button class="cdp-tab cdp-tab-active" data-tab="database">
-                    Database
-                    <span class="cdp-tab-badge" id="cdp-db-count">0</span>
-                </button>
-                <button class="cdp-tab" data-tab="history">
-                    History
-                    <span class="cdp-tab-badge" id="cdp-history-count">0</span>
-                </button>
-                <button class="cdp-tab" data-tab="palette">
-                    Palette
-                </button>
-                <button class="cdp-tab" data-tab="harmony">
-                    Harmony
-                </button>
-                <button class="cdp-tab" data-tab="assets">
-                    Assets
-                </button>
-                <button class="cdp-tab" data-tab="site-info">
-                    Site Info
-                </button>
-            </div>
-
             <div id="cdp-search-box">
                 <div id="cdp-search-wrapper">
                     <span id="cdp-search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
@@ -2627,7 +2681,8 @@
                     <span class="cdp-footer-shortcut"><span class="cdp-kbd">Alt</span>+<span class="cdp-kbd">C</span> Toggle</span>
                     <span class="cdp-footer-shortcut"><span class="cdp-kbd">Left</span>/<span class="cdp-kbd">Right</span> Move</span>
                 </div>
-            </div>`;
+            </div>
+            </main>`;
         document.body.appendChild(panel);
 
         const assetActions = document.createElement('div');
@@ -2679,8 +2734,8 @@
     function updateDetectionControls() {
         const detectBtn = document.getElementById('cdp-detect-btn');
         const detectLabel = document.getElementById('cdp-detect-label');
-        const toggleBtn = document.getElementById('cdp-toggle-btn');
-        if (!detectBtn || !detectLabel || !toggleBtn) return;
+        const colorNav = document.getElementById('cdp-color-nav');
+        if (!detectBtn || !detectLabel || !colorNav) return;
         detectBtn.className = isDetecting ? 'cdp-active' : 'cdp-inactive';
         if (isDetecting) {
             detectLabel.textContent = detectionMode === DETECTION_MODE_EYEDROPPER
@@ -2691,7 +2746,7 @@
                 ? 'Pick Pixel Color'
                 : 'Start Style Detection';
         }
-        toggleBtn.classList.toggle('cdp-detecting', isDetecting);
+        colorNav.classList.toggle('cdp-detecting', isDetecting);
     }
 
     function setDetecting(active) {
@@ -2783,14 +2838,11 @@
     }
 
     function setPanelSide(panel, side, shouldNotify = true) {
-        const toggleBtn = document.getElementById('cdp-toggle-btn');
         const nextSide = side === 'left' ? 'left' : 'right';
         const sideChanged = sidebarSide !== nextSide;
         sidebarSide = nextSide;
         panel.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
         panel.setAttribute('data-side', sidebarSide);
-        toggleBtn.classList.toggle('cdp-sidebar-left', sidebarSide === 'left');
-        toggleBtn.setAttribute('data-side', sidebarSide);
         safeSetValue(STORAGE_KEYS.sidebarSide, sidebarSide);
         if (shouldNotify && sideChanged) {
             showNotification('Sidebar: ' + (sidebarSide === 'left' ? 'Left' : 'Right'), 'info');
@@ -2804,14 +2856,15 @@
 
     function setPanelOpen(panel, open) {
         const toggleBtn = document.getElementById('cdp-toggle-btn');
+        const content = document.getElementById('cdp-sidebar-content');
         isPanelOpen = Boolean(open);
         panel.classList.toggle('cdp-hidden', !isPanelOpen);
-        panel.setAttribute('aria-hidden', String(!isPanelOpen));
-        toggleBtn.classList.toggle('cdp-sidebar-open', isPanelOpen);
+        panel.setAttribute('data-open', String(isPanelOpen));
+        content.setAttribute('aria-hidden', String(!isPanelOpen));
         toggleBtn.setAttribute('aria-expanded', String(isPanelOpen));
-        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro');
-        toggleBtn.title = isPanelOpen ? 'Hide Color Detector Pro' : 'Show Color Detector Pro';
-        if (!isPanelOpen && panel.contains(document.activeElement)) {
+        toggleBtn.setAttribute('aria-label', isPanelOpen ? 'Close Color Detector Pro' : 'Open Color Detector Pro');
+        toggleBtn.title = isPanelOpen ? 'Close sidebar (Alt+C)' : 'Open sidebar (Alt+C)';
+        if (!isPanelOpen && content.contains(document.activeElement)) {
             toggleBtn.focus();
         }
     }
@@ -2832,7 +2885,7 @@
     function setupEventListeners() {
         const panel = document.getElementById('cdp-panel');
         const toggleBtn = document.getElementById('cdp-toggle-btn');
-        const closeBtn = document.getElementById('cdp-btn-close');
+        const colorNav = document.getElementById('cdp-color-nav');
         const detectBtn = document.getElementById('cdp-detect-btn');
         const modeBtn = document.getElementById('cdp-mode-btn');
         const assetBtn = document.getElementById('cdp-asset-btn');
@@ -2849,9 +2902,10 @@
             setPanelOpen(panel, !isPanelOpen);
         });
 
-        // Close
-        closeBtn.addEventListener('click', () => {
-            setPanelOpen(panel, false);
+        // Color detector navigation
+        colorNav.addEventListener('click', () => {
+            setPanelOpen(panel, true);
+            detectBtn.focus();
         });
 
         // Detect
@@ -2920,6 +2974,7 @@
         // Tabs
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
+                setPanelOpen(panel, true);
                 selectTab(tab.dataset.tab, true, true);
             });
         });

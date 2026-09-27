@@ -31,8 +31,10 @@ ada di [SKILL.md](SKILL.md).
   siap tempel.
 - Tab Site Info memindai font terpakai, palet warna, design token `:root`,
   dan sinyal teknologi halaman secara bertahap agar UI tetap responsif.
-- Panel tampil sebagai sidebar responsif dan bergeser masuk atau keluar
-  saat tombol toggle ditekan.
+- Panel memakai sidebar responsif dengan navigation rail vertikal untuk
+  Database, History, Palette, Harmony, Assets, dan Site Info.
+- Saat sidebar ditutup, navigation rail tetap terlihat sebagai deretan ikon;
+  tombol `panel-right-close` di bagian atas membuka atau menutup konten.
 - Tombol `Left` dan `Right` memindahkan sidebar ke sisi layar yang tidak
   menutupi konten yang sedang diperiksa.
 - Tampilan memakai gaya sederhana ala GitHub dengan tombol sedikit
