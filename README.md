@@ -17,6 +17,11 @@ ada di [SKILL.md](SKILL.md).
   penyimpanan userscript supaya bertahan antar reload.
 - Database warna memakai cache stale-while-revalidate dan 30 warna dasar
   bawaan sebagai fallback saat jaringan tidak tersedia.
+- Tab History dan Palette bisa diekspor sebagai CSS custom properties,
+  JSON, atau daftar hex polos.
+- Preview warna menampilkan rasio kontras WCAG terhadap putih dan hitam.
+- Tab Harmony membuat skema complementary, analogous, triadic, dan
+  monochromatic dari warna terakhir yang terdeteksi.
 
 ## Alur Kerja
 

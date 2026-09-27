@@ -259,6 +259,27 @@
             font-size: 12px; color: var(--cdp-text-muted);
             font-family: 'SF Mono', monospace;
         }
+        #cdp-contrast-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-top: 2px;
+        }
+        .cdp-contrast-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 10px;
+            color: var(--cdp-text-muted);
+        }
+        .cdp-contrast-row strong {
+            color: var(--cdp-text-secondary);
+            font-family: 'SF Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
         .cdp-copy-hint {
             font-size: 10px; color: var(--cdp-text-muted);
             margin-top: 2px; opacity: 0.7;
@@ -275,7 +296,7 @@
             flex: 1; padding: 11px 0;
             border: none; background: transparent;
             color: var(--cdp-text-muted);
-            font-family: inherit; font-size: 12px; font-weight: 600;
+            font-family: inherit; font-size: 11px; font-weight: 600;
             cursor: pointer; transition: var(--cdp-transition);
             position: relative;
             display: flex; align-items: center; justify-content: center;
@@ -344,6 +365,82 @@
         }
         .cdp-palette-swatch:hover { transform: scale(1.15); }
 
+        .cdp-export-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: rgba(102,126,234,0.04);
+            border-bottom: 1px solid var(--cdp-border);
+            flex-wrap: wrap;
+        }
+        .cdp-export-label {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 2px;
+        }
+        .cdp-export-btn,
+        .cdp-harmony-copy {
+            padding: 6px 10px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 7px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--cdp-transition);
+        }
+        .cdp-export-btn:hover,
+        .cdp-harmony-copy:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+            background: rgba(102,126,234,0.16);
+        }
+        .cdp-export-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .cdp-export-btn:disabled:hover {
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-secondary);
+            background: rgba(102,126,234,0.08);
+        }
+
+        /* ----- HARMONY ----- */
+        .cdp-harmony-source {
+            padding: 12px 18px;
+            background: rgba(102,126,234,0.05);
+            border-bottom: 1px solid var(--cdp-border);
+            color: var(--cdp-text-secondary);
+            font-size: 12px;
+        }
+        .cdp-harmony-source strong {
+            color: var(--cdp-text-primary);
+            font-family: 'SF Mono', monospace;
+        }
+        .cdp-harmony-scheme {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .cdp-harmony-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 18px 0;
+        }
+        .cdp-harmony-title {
+            color: var(--cdp-primary);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         /* ----- COLOR LIST ----- */
         #cdp-color-list-container {
             flex: 1; overflow-y: auto; min-height: 0;
@@ -396,6 +493,7 @@
             opacity: 0; flex-shrink: 0;
         }
         .cdp-color-item:hover .cdp-color-item-copy { opacity: 1; }
+        .cdp-color-item-copy.cdp-copy-visible { opacity: 1; }
         .cdp-color-item-copy:hover {
             background: var(--cdp-primary);
             border-color: var(--cdp-primary);

@@ -44,7 +44,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.3</span>
+                    <span id="cdp-version">v2.4</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
@@ -71,6 +71,16 @@
                         <div id="cdp-color-hex" style="color:#667eea;">— — —</div>
                         <div id="cdp-color-rgb">RGB: —</div>
                         <div id="cdp-color-hsl">HSL: —</div>
+                        <div id="cdp-contrast-panel">
+                            <div class="cdp-contrast-row">
+                                <span>Contrast vs #FFFFFF</span>
+                                <strong id="cdp-contrast-white">-</strong>
+                            </div>
+                            <div class="cdp-contrast-row">
+                                <span>Contrast vs #000000</span>
+                                <strong id="cdp-contrast-black">-</strong>
+                            </div>
+                        </div>
                         <div class="cdp-copy-hint">Click to copy color code</div>
                     </div>
                 </div>
@@ -87,6 +97,9 @@
                 </button>
                 <button class="cdp-tab" data-tab="palette">
                     Palette
+                </button>
+                <button class="cdp-tab" data-tab="harmony">
+                    Harmony
                 </button>
             </div>
 

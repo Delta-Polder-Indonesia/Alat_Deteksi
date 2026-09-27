@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Detector Pro — Real-Time Color Inspector
 // @namespace    https://github.com/JD-YH03D/release
-// @version      2.3.0
+// @version      2.4.0
 // @description  Real-time color detection on any web page. Hover over any element to identify colors & hex codes. Professional panel with 500+ color database.
 // @author       Bintang Toba Pro Team
 // @license      MIT
@@ -336,6 +336,27 @@
             font-size: 12px; color: var(--cdp-text-muted);
             font-family: 'SF Mono', monospace;
         }
+        #cdp-contrast-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-top: 2px;
+        }
+        .cdp-contrast-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 10px;
+            color: var(--cdp-text-muted);
+        }
+        .cdp-contrast-row strong {
+            color: var(--cdp-text-secondary);
+            font-family: 'SF Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
         .cdp-copy-hint {
             font-size: 10px; color: var(--cdp-text-muted);
             margin-top: 2px; opacity: 0.7;
@@ -352,7 +373,7 @@
             flex: 1; padding: 11px 0;
             border: none; background: transparent;
             color: var(--cdp-text-muted);
-            font-family: inherit; font-size: 12px; font-weight: 600;
+            font-family: inherit; font-size: 11px; font-weight: 600;
             cursor: pointer; transition: var(--cdp-transition);
             position: relative;
             display: flex; align-items: center; justify-content: center;
@@ -421,6 +442,82 @@
         }
         .cdp-palette-swatch:hover { transform: scale(1.15); }
 
+        .cdp-export-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: rgba(102,126,234,0.04);
+            border-bottom: 1px solid var(--cdp-border);
+            flex-wrap: wrap;
+        }
+        .cdp-export-label {
+            color: var(--cdp-text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 2px;
+        }
+        .cdp-export-btn,
+        .cdp-harmony-copy {
+            padding: 6px 10px;
+            border: 1px solid var(--cdp-border);
+            border-radius: 7px;
+            background: rgba(102,126,234,0.08);
+            color: var(--cdp-text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--cdp-transition);
+        }
+        .cdp-export-btn:hover,
+        .cdp-harmony-copy:hover {
+            border-color: var(--cdp-primary);
+            color: var(--cdp-text-primary);
+            background: rgba(102,126,234,0.16);
+        }
+        .cdp-export-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .cdp-export-btn:disabled:hover {
+            border-color: var(--cdp-border);
+            color: var(--cdp-text-secondary);
+            background: rgba(102,126,234,0.08);
+        }
+
+        /* ----- HARMONY ----- */
+        .cdp-harmony-source {
+            padding: 12px 18px;
+            background: rgba(102,126,234,0.05);
+            border-bottom: 1px solid var(--cdp-border);
+            color: var(--cdp-text-secondary);
+            font-size: 12px;
+        }
+        .cdp-harmony-source strong {
+            color: var(--cdp-text-primary);
+            font-family: 'SF Mono', monospace;
+        }
+        .cdp-harmony-scheme {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .cdp-harmony-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 18px 0;
+        }
+        .cdp-harmony-title {
+            color: var(--cdp-primary);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         /* ----- COLOR LIST ----- */
         #cdp-color-list-container {
             flex: 1; overflow-y: auto; min-height: 0;
@@ -473,6 +570,7 @@
             opacity: 0; flex-shrink: 0;
         }
         .cdp-color-item:hover .cdp-color-item-copy { opacity: 1; }
+        .cdp-color-item-copy.cdp-copy-visible { opacity: 1; }
         .cdp-color-item-copy:hover {
             background: var(--cdp-primary);
             border-color: var(--cdp-primary);
@@ -690,7 +788,8 @@
     }
 
     function isValidTabName(tabName) {
-        return tabName === 'database' || tabName === 'history' || tabName === 'palette';
+        return tabName === 'database' || tabName === 'history' ||
+            tabName === 'palette' || tabName === 'harmony';
     }
 
     function loadStoredActiveTab() {
@@ -828,6 +927,88 @@
         return (0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b) / 255 > 0.5 ? '#1a1a2e' : '#FFFFFF';
     }
 
+    function clampNumber(value, min, max) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return min;
+        return Math.min(max, Math.max(min, number));
+    }
+
+    function srgbChannelToLinear(channel) {
+        const value = channel / 255;
+        return value <= 0.03928
+            ? value / 12.92
+            : ((value + 0.055) / 1.055) ** 2.4;
+    }
+
+    function relativeLuminance(hex) {
+        const rgb = hexToRgb(hex);
+        if (!rgb) return null;
+        return 0.2126 * srgbChannelToLinear(rgb.r) +
+            0.7152 * srgbChannelToLinear(rgb.g) +
+            0.0722 * srgbChannelToLinear(rgb.b);
+    }
+
+    function contrastRatio(hex1, hex2) {
+        const l1 = relativeLuminance(hex1);
+        const l2 = relativeLuminance(hex2);
+        if (l1 === null || l2 === null) return NaN;
+        const lighter = Math.max(l1, l2);
+        const darker = Math.min(l1, l2);
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    function contrastGrade(ratio) {
+        if (!Number.isFinite(ratio)) return 'Fail';
+        if (ratio >= 7) return 'AAA';
+        if (ratio >= 4.5) return 'AA';
+        return 'Fail';
+    }
+
+    function formatContrastRatio(hex, againstHex) {
+        const ratio = contrastRatio(hex, againstHex);
+        if (!Number.isFinite(ratio)) return '-';
+        return `${ratio.toFixed(2)}:1 ${contrastGrade(ratio)}`;
+    }
+
+    function hslToRgb(h, s, l) {
+        const hueValue = Number(h);
+        const hue = Number.isFinite(hueValue) ? ((hueValue % 360) + 360) % 360 : 0;
+        const saturation = clampNumber(s, 0, 100) / 100;
+        const lightness = clampNumber(l, 0, 100) / 100;
+        const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+        const x = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+        const m = lightness - chroma / 2;
+        let rp = 0, gp = 0, bp = 0;
+
+        if (hue < 60) {
+            rp = chroma; gp = x;
+        } else if (hue < 120) {
+            rp = x; gp = chroma;
+        } else if (hue < 180) {
+            gp = chroma; bp = x;
+        } else if (hue < 240) {
+            gp = x; bp = chroma;
+        } else if (hue < 300) {
+            rp = x; bp = chroma;
+        } else {
+            rp = chroma; bp = x;
+        }
+
+        return {
+            r: Math.round(clampNumber((rp + m) * 255, 0, 255)),
+            g: Math.round(clampNumber((gp + m) * 255, 0, 255)),
+            b: Math.round(clampNumber((bp + m) * 255, 0, 255)),
+        };
+    }
+
+    function hslToHex(h, s, l) {
+        const rgb = hslToRgb(h, s, l);
+        return '#' + [rgb.r, rgb.g, rgb.b]
+            .map(x => x.toString(16).padStart(2, '0'))
+            .join('')
+            .toUpperCase();
+    }
+
     // Timer disimpan agar toast beruntun tidak saling menutup lebih cepat
     // (timeout milik toast lama tidak boleh menyembunyikan toast baru).
     let toastTimer = null;
@@ -941,7 +1122,7 @@
                 <div id="cdp-header-left">
                     <div id="cdp-logo">${pipetteIcon(16)}</div>
                     <span id="cdp-title">Color Detector Pro</span>
-                    <span id="cdp-version">v2.3</span>
+                    <span id="cdp-version">v2.4</span>
                 </div>
                 <div id="cdp-header-actions">
                     <button class="cdp-header-btn" id="cdp-btn-minimize" title="Minimize">─</button>
@@ -968,6 +1149,16 @@
                         <div id="cdp-color-hex" style="color:#667eea;">— — —</div>
                         <div id="cdp-color-rgb">RGB: —</div>
                         <div id="cdp-color-hsl">HSL: —</div>
+                        <div id="cdp-contrast-panel">
+                            <div class="cdp-contrast-row">
+                                <span>Contrast vs #FFFFFF</span>
+                                <strong id="cdp-contrast-white">-</strong>
+                            </div>
+                            <div class="cdp-contrast-row">
+                                <span>Contrast vs #000000</span>
+                                <strong id="cdp-contrast-black">-</strong>
+                            </div>
+                        </div>
                         <div class="cdp-copy-hint">Click to copy color code</div>
                     </div>
                 </div>
@@ -984,6 +1175,9 @@
                 </button>
                 <button class="cdp-tab" data-tab="palette">
                     Palette
+                </button>
+                <button class="cdp-tab" data-tab="harmony">
+                    Harmony
                 </button>
             </div>
 
@@ -1390,6 +1584,7 @@
         if (tab === 'database') renderColorList(document.getElementById('cdp-search-input').value.trim());
         else if (tab === 'history') renderHistory();
         else if (tab === 'palette') renderPalette();
+        else if (tab === 'harmony') renderHarmony();
     }
 
     function updatePreview(hex, name) {
@@ -1402,6 +1597,89 @@
         el.textContent = hex; el.style.color = hex; el.setAttribute('data-hex', hex);
         document.getElementById('cdp-color-rgb').textContent = `RGB: ${rgb.r}, ${rgb.g}, ${rgb.b}`;
         document.getElementById('cdp-color-hsl').textContent = `HSL: ${hsl.h}, ${hsl.s}%, ${hsl.l}%`;
+        document.getElementById('cdp-contrast-white').textContent = formatContrastRatio(hex, '#FFFFFF');
+        document.getElementById('cdp-contrast-black').textContent = formatContrastRatio(hex, '#000000');
+    }
+
+    function getPaletteGroups() {
+        return [
+            { name: 'Warm Sunset', colors: ['#FF6B6B','#FFA07A','#FFD93D','#FF8C42','#FF5252','#E74C3C'] },
+            { name: 'Ocean Breeze', colors: ['#0077B6','#00B4D8','#90E0EF','#CAF0F8','#023E8A','#48CAE4'] },
+            { name: 'Forest', colors: ['#2D6A4F','#40916C','#52B788','#74C69D','#95D5B2','#B7E4C7'] },
+            { name: 'Pastel Dream', colors: ['#FFB5E8','#FF9CEE','#B28DFF','#85E3FF','#BFFCC6','#FFC9DE'] },
+            { name: 'Midnight', colors: ['#0F0F23','#1A1A2E','#16213E','#0F3460','#533483','#E94560'] },
+            { name: 'Autumn', colors: ['#D4A373','#CCD5AE','#E9EDC9','#FEFAE0','#FAEDCD','#A98467'] },
+            { name: 'Purple Rain', colors: ['#667eea','#764ba2','#f093fb','#5a67d8','#9F7AEA','#B794F4'] },
+            { name: 'Neon', colors: ['#FF006E','#FB5607','#FFBE0B','#3A86FF','#8338EC','#06D6A0'] },
+        ];
+    }
+
+    function renderExportBar(source, count) {
+        const disabled = count > 0 ? '' : ' disabled';
+        return `
+            <div class="cdp-export-bar">
+                <span class="cdp-export-label">Export</span>
+                <button class="cdp-export-btn" data-export-source="${source}" data-export-format="css"${disabled}>CSS vars</button>
+                <button class="cdp-export-btn" data-export-source="${source}" data-export-format="json"${disabled}>JSON</button>
+                <button class="cdp-export-btn" data-export-source="${source}" data-export-format="hex"${disabled}>Hex list</button>
+            </div>`;
+    }
+
+    function formatCssCustomProperties(entries, prefix) {
+        if (entries.length === 0) return '';
+        const lines = entries.map((entry, index) =>
+            `    --cdp-${prefix}-${String(index + 1).padStart(2, '0')}: ${entry.hex};`
+        );
+        return `:root {\n${lines.join('\n')}\n}`;
+    }
+
+    function paletteEntries() {
+        const entries = [];
+        getPaletteGroups().forEach(group => {
+            group.colors.forEach(hex => {
+                entries.push({ name: group.name, hex });
+            });
+        });
+        return entries;
+    }
+
+    function exportColors(source, format) {
+        try {
+            if (source !== 'history' && source !== 'palette') {
+                throw new Error('Unsupported export source: ' + source);
+            }
+            const isHistory = source === 'history';
+            const entries = isHistory
+                ? detectionHistory.map(item => ({ name: item.name, hex: item.hex }))
+                : paletteEntries();
+            if (entries.length === 0) {
+                showToast('Nothing to export');
+                return;
+            }
+
+            let text = '';
+            if (format === 'css') {
+                text = formatCssCustomProperties(entries, isHistory ? 'history' : 'palette');
+            } else if (format === 'json') {
+                text = JSON.stringify(isHistory
+                    ? detectionHistory.map(item => ({
+                        hex: item.hex,
+                        name: item.name,
+                        time: item.time,
+                        element: item.element,
+                    }))
+                    : getPaletteGroups(), null, 2);
+            } else if (format === 'hex') {
+                text = entries.map(entry => entry.hex).join('\n');
+            } else {
+                throw new Error('Unsupported export format: ' + format);
+            }
+
+            copyToClipboard(text);
+        } catch (err) {
+            logError('exportColors ' + source + ' ' + format, err);
+            showToast('Export failed');
+        }
     }
 
     function renderColorList(filter = '') {
@@ -1425,13 +1703,13 @@
             const code = escapeHtml(color.Code);
             const name = escapeHtml(color['Color names']);
             const rgb = hexToRgb(color.Code);
-            const rs = rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : '—';
+            const rs = rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : '-';
             html += `
                 <div class="cdp-color-item" data-hex="${code}" data-name="${name}">
                     <div class="cdp-color-swatch" style="background:${code};"></div>
                     <div class="cdp-color-item-info">
                         <div class="cdp-color-item-name">${name}</div>
-                        <div class="cdp-color-item-code">${code} · rgb(${rs})</div>
+                        <div class="cdp-color-item-code">${code} - rgb(${rs})</div>
                     </div>
                     <button class="cdp-color-item-copy" data-copy="${code}">Copy</button>
                 </div>`;
@@ -1442,15 +1720,18 @@
 
     function renderHistory() {
         const container = document.getElementById('cdp-color-list-container');
+        let html = renderExportBar('history', detectionHistory.length);
         if (detectionHistory.length === 0) {
-            container.innerHTML = `
+            html += `
                 <div class="cdp-empty-state">
                     <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
                     <div class="cdp-empty-state-text">No detection history yet.<br>Pick a pixel color or enable style detection.</div>
                 </div>`;
+            container.innerHTML = html;
+            attachExportHandlers(container);
             return;
         }
-        let html = '<div class="cdp-category-header">Recent Detection History</div>';
+        html += '<div class="cdp-category-header">Recent Detection History</div>';
         detectionHistory.forEach(item => {
             const hex = escapeHtml(item.hex);
             const name = escapeHtml(item.name);
@@ -1459,45 +1740,161 @@
                     <div class="cdp-color-swatch" style="background:${hex};"></div>
                     <div class="cdp-color-item-info">
                         <div class="cdp-color-item-name">${name}</div>
-                        <div class="cdp-color-item-code">${hex} · &lt;${escapeHtml(item.element)}&gt;</div>
+                        <div class="cdp-color-item-code">${hex} - &lt;${escapeHtml(item.element)}&gt;</div>
                     </div>
                     <span class="cdp-history-time">${escapeHtml(item.time)}</span>
-                    <button class="cdp-color-item-copy" data-copy="${hex}" style="opacity:1;">Copy</button>
+                    <button class="cdp-color-item-copy cdp-copy-visible" data-copy="${hex}">Copy</button>
                 </div>`;
         });
         container.innerHTML = html;
+        attachExportHandlers(container);
         attachListHandlers(container);
     }
 
     function renderPalette() {
         const container = document.getElementById('cdp-color-list-container');
-        const palettes = [
-            { name: 'Warm Sunset', colors: ['#FF6B6B','#FFA07A','#FFD93D','#FF8C42','#FF5252','#E74C3C'] },
-            { name: 'Ocean Breeze', colors: ['#0077B6','#00B4D8','#90E0EF','#CAF0F8','#023E8A','#48CAE4'] },
-            { name: 'Forest', colors: ['#2D6A4F','#40916C','#52B788','#74C69D','#95D5B2','#B7E4C7'] },
-            { name: 'Pastel Dream', colors: ['#FFB5E8','#FF9CEE','#B28DFF','#85E3FF','#BFFCC6','#FFC9DE'] },
-            { name: 'Midnight', colors: ['#0F0F23','#1A1A2E','#16213E','#0F3460','#533483','#E94560'] },
-            { name: 'Autumn', colors: ['#D4A373','#CCD5AE','#E9EDC9','#FEFAE0','#FAEDCD','#A98467'] },
-            { name: 'Purple Rain', colors: ['#667eea','#764ba2','#f093fb','#5a67d8','#9F7AEA','#B794F4'] },
-            { name: 'Neon', colors: ['#FF006E','#FB5607','#FFBE0B','#3A86FF','#8338EC','#06D6A0'] },
-        ];
-        let html = '';
+        const palettes = getPaletteGroups();
+        let html = renderExportBar('palette', paletteEntries().length);
         palettes.forEach(p => {
-            html += `<div class="cdp-category-header">${p.name}</div>`;
+            html += `<div class="cdp-category-header">${escapeHtml(p.name)}</div>`;
             html += '<div class="cdp-palette-grid">';
             p.colors.forEach(c => {
+                const hex = escapeHtml(c);
                 const cc = getContrastColor(c);
-                html += `<div class="cdp-palette-swatch" data-hex="${c}" style="background:${c};color:${cc};">${c}</div>`;
+                html += `<div class="cdp-palette-swatch" data-hex="${hex}" style="background:${hex};color:${cc};">${hex}</div>`;
             });
             html += '</div>';
         });
         container.innerHTML = html;
+        attachExportHandlers(container);
+        attachPaletteHandlers(container);
+    }
+
+    function getHarmonySchemes(hex) {
+        const rgb = hexToRgb(hex);
+        if (!rgb) return [];
+        const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+        const lightLow = clampNumber(hsl.l - 30, 8, 92);
+        const lightMidLow = clampNumber(hsl.l - 15, 8, 92);
+        const lightMidHigh = clampNumber(hsl.l + 15, 8, 92);
+        const lightHigh = clampNumber(hsl.l + 30, 8, 92);
+        return [
+            {
+                key: 'complementary',
+                name: 'Complementary',
+                colors: [hex, hslToHex(hsl.h + 180, hsl.s, hsl.l)],
+            },
+            {
+                key: 'analogous',
+                name: 'Analogous',
+                colors: [
+                    hslToHex(hsl.h - 30, hsl.s, hsl.l),
+                    hex,
+                    hslToHex(hsl.h + 30, hsl.s, hsl.l),
+                ],
+            },
+            {
+                key: 'triadic',
+                name: 'Triadic',
+                colors: [
+                    hex,
+                    hslToHex(hsl.h + 120, hsl.s, hsl.l),
+                    hslToHex(hsl.h + 240, hsl.s, hsl.l),
+                ],
+            },
+            {
+                key: 'monochromatic',
+                name: 'Monochromatic',
+                colors: [
+                    hslToHex(hsl.h, hsl.s, lightLow),
+                    hslToHex(hsl.h, hsl.s, lightMidLow),
+                    hex,
+                    hslToHex(hsl.h, hsl.s, lightMidHigh),
+                    hslToHex(hsl.h, hsl.s, lightHigh),
+                ],
+            },
+        ];
+    }
+
+    function renderHarmony() {
+        const container = document.getElementById('cdp-color-list-container');
+        if (detectionHistory.length === 0) {
+            container.innerHTML = `
+                <div class="cdp-empty-state">
+                    <div class="cdp-empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M3 12h18"/><path d="m5 5 14 14"/><path d="m19 5-14 14"/></svg></div>
+                    <div class="cdp-empty-state-text">No detected color yet.<br>Pick a pixel color or use style detection first.</div>
+                </div>`;
+            return;
+        }
+
+        const source = detectionHistory[0];
+        const sourceHex = normalizeHex(source.hex);
+        const schemes = sourceHex ? getHarmonySchemes(sourceHex) : [];
+        if (schemes.length === 0) {
+            logError('renderHarmony', new Error('Last detected color is invalid'));
+            container.innerHTML = `
+                <div class="cdp-empty-state">
+                    <div class="cdp-empty-state-text">Harmony could not be generated for the last detected color.</div>
+                </div>`;
+            return;
+        }
+
+        let html = `
+            <div class="cdp-harmony-source">
+                Source color: <strong>${escapeHtml(sourceHex)}</strong> ${escapeHtml(source.name)}
+            </div>`;
+        schemes.forEach(scheme => {
+            html += `
+                <div class="cdp-harmony-scheme" data-harmony-key="${scheme.key}">
+                    <div class="cdp-harmony-heading">
+                        <div class="cdp-harmony-title">${scheme.name}</div>
+                        <button class="cdp-harmony-copy" data-harmony-copy="${scheme.key}">Copy scheme</button>
+                    </div>
+                    <div class="cdp-palette-grid">`;
+            scheme.colors.forEach(color => {
+                const hex = escapeHtml(color);
+                const contrast = getContrastColor(color);
+                html += `<div class="cdp-palette-swatch" data-hex="${hex}" style="background:${hex};color:${contrast};">${hex}</div>`;
+            });
+            html += `
+                    </div>
+                </div>`;
+        });
+        container.innerHTML = html;
+        attachHarmonyHandlers(container, schemes);
+    }
+
+    function attachExportHandlers(container) {
+        container.querySelectorAll('.cdp-export-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                exportColors(btn.dataset.exportSource, btn.dataset.exportFormat);
+            });
+        });
+    }
+
+    function attachPaletteHandlers(container) {
         container.querySelectorAll('.cdp-palette-swatch').forEach(sw => {
             sw.addEventListener('click', () => {
                 const hex = sw.dataset.hex;
                 const closest = findClosestColor(hex);
                 updatePreview(hex, closest ? closest['Color names'] : hex);
                 copyToClipboard(hex);
+            });
+        });
+    }
+
+    function attachHarmonyHandlers(container, schemes) {
+        attachPaletteHandlers(container);
+        container.querySelectorAll('.cdp-harmony-copy').forEach(btn => {
+            btn.addEventListener('click', () => {
+                try {
+                    const scheme = schemes.find(item => item.key === btn.dataset.harmonyCopy);
+                    if (!scheme) throw new Error('Harmony scheme not found: ' + btn.dataset.harmonyCopy);
+                    copyToClipboard(scheme.colors.join('\n'));
+                } catch (err) {
+                    logError('copyHarmonyScheme', err);
+                    showToast('Copy failed');
+                }
             });
         });
     }

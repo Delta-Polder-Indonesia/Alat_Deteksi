@@ -71,7 +71,8 @@
     }
 
     function isValidTabName(tabName) {
-        return tabName === 'database' || tabName === 'history' || tabName === 'palette';
+        return tabName === 'database' || tabName === 'history' ||
+            tabName === 'palette' || tabName === 'harmony';
     }
 
     function loadStoredActiveTab() {
@@ -207,6 +208,88 @@
         const rgb = hexToRgb(hex);
         if (!rgb) return '#FFFFFF';
         return (0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b) / 255 > 0.5 ? '#1a1a2e' : '#FFFFFF';
+    }
+
+    function clampNumber(value, min, max) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return min;
+        return Math.min(max, Math.max(min, number));
+    }
+
+    function srgbChannelToLinear(channel) {
+        const value = channel / 255;
+        return value <= 0.03928
+            ? value / 12.92
+            : ((value + 0.055) / 1.055) ** 2.4;
+    }
+
+    function relativeLuminance(hex) {
+        const rgb = hexToRgb(hex);
+        if (!rgb) return null;
+        return 0.2126 * srgbChannelToLinear(rgb.r) +
+            0.7152 * srgbChannelToLinear(rgb.g) +
+            0.0722 * srgbChannelToLinear(rgb.b);
+    }
+
+    function contrastRatio(hex1, hex2) {
+        const l1 = relativeLuminance(hex1);
+        const l2 = relativeLuminance(hex2);
+        if (l1 === null || l2 === null) return NaN;
+        const lighter = Math.max(l1, l2);
+        const darker = Math.min(l1, l2);
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    function contrastGrade(ratio) {
+        if (!Number.isFinite(ratio)) return 'Fail';
+        if (ratio >= 7) return 'AAA';
+        if (ratio >= 4.5) return 'AA';
+        return 'Fail';
+    }
+
+    function formatContrastRatio(hex, againstHex) {
+        const ratio = contrastRatio(hex, againstHex);
+        if (!Number.isFinite(ratio)) return '-';
+        return `${ratio.toFixed(2)}:1 ${contrastGrade(ratio)}`;
+    }
+
+    function hslToRgb(h, s, l) {
+        const hueValue = Number(h);
+        const hue = Number.isFinite(hueValue) ? ((hueValue % 360) + 360) % 360 : 0;
+        const saturation = clampNumber(s, 0, 100) / 100;
+        const lightness = clampNumber(l, 0, 100) / 100;
+        const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+        const x = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+        const m = lightness - chroma / 2;
+        let rp = 0, gp = 0, bp = 0;
+
+        if (hue < 60) {
+            rp = chroma; gp = x;
+        } else if (hue < 120) {
+            rp = x; gp = chroma;
+        } else if (hue < 180) {
+            gp = chroma; bp = x;
+        } else if (hue < 240) {
+            gp = x; bp = chroma;
+        } else if (hue < 300) {
+            rp = x; bp = chroma;
+        } else {
+            rp = chroma; bp = x;
+        }
+
+        return {
+            r: Math.round(clampNumber((rp + m) * 255, 0, 255)),
+            g: Math.round(clampNumber((gp + m) * 255, 0, 255)),
+            b: Math.round(clampNumber((bp + m) * 255, 0, 255)),
+        };
+    }
+
+    function hslToHex(h, s, l) {
+        const rgb = hslToRgb(h, s, l);
+        return '#' + [rgb.r, rgb.g, rgb.b]
+            .map(x => x.toString(16).padStart(2, '0'))
+            .join('')
+            .toUpperCase();
     }
 
     // Timer disimpan agar toast beruntun tidak saling menutup lebih cepat
